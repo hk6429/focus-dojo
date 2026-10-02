@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>專注道場</title>
+<meta name="description" content="個人專注力訓練：專注計時、呼吸熱身、注意力小遊戲、30 天紀錄">
+<meta name="theme-color" content="#1f6f5f">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="top">
+  <h1>專注道場</h1>
+  <div class="streak" id="hdr-streak" title="連續天數">🔥 0 天</div>
+</header>
+
+<main>
+  <!-- 專注計時 -->
+  <section id="view-focus" class="view active">
+    <div id="focus-setup">
+      <label class="field">
+        <span>這段時間要做什麼？</span>
+        <input id="task-input" type="text" maxlength="40" placeholder="例：改作文 / 讀一章書" autocomplete="off">
+      </label>
+      <div class="chips" id="minute-chips">
+        <button data-min="15">15</button>
+        <button data-min="25" class="on">25</button>
+        <button data-min="45">45</button>
+        <button data-min="60">60</button>
+        <input id="minute-custom" type="number" min="1" max="180" placeholder="自訂">
+      </div>
+      <button class="primary big" id="btn-start">開始專注</button>
+      <p class="hint">計時中若分心，按一下「分心」記下原因；切到別的頁面會自動記為分心。</p>
+    </div>
+
+    <div id="focus-running" hidden>
+      <p class="task-label" id="run-task"></p>
+      <div class="ring-wrap">
+        <svg class="ring" viewBox="0 0 200 200">
+          <circle class="ring-bg" cx="100" cy="100" r="90"/>
+          <circle class="ring-fg" id="ring-fg" cx="100" cy="100" r="90"/>
+        </svg>
+        <div class="ring-text" id="run-clock">25:00</div>
+      </div>
+      <div class="dist-count">分心 <b id="run-dist">0</b> 次</div>
+      <div class="reasons">
+        <button data-reason="手機">📱 手機</button>
+        <button data-reason="雜念">💭 雜念</button>
+        <button data-reason="他人">🗣️ 他人</button>
+        <button data-reason="其他">❓ 其他</button>
+      </div>
+      <div class="row">
+        <button class="ghost" id="btn-abort">放棄</button>
+        <button class="secondary" id="btn-finish">提早完成</button>
+      </div>
+    </div>
+
+    <div id="focus-done" hidden>
+      <h2>完成 ✔</h2>
+      <p id="done-summary"></p>
+      <button class="primary" id="btn-again">再來一回</button>
+    </div>
+  </section>
+
+  <!-- 呼吸 -->
+  <section id="view-breath" class="view">
+    <h2>呼吸熱身</h2>
+    <div class="chips" id="breath-mode">
+      <button data-mode="478" class="on">4-7-8</button>
+      <button data-mode="box">方塊 4-4-4-4</button>
+    </div>
+    <div class="chips" id="breath-len">
+      <button data-sec="60" class="on">1 分</button>
+      <button data-sec="180">3 分</button>
+      <button data-sec="300">5 分</button>
+    </div>
+    <div class="breath-stage">
+      <div class="breath-circle" id="breath-circle"><span id="breath-phase">準備</span></div>
+      <div class="breath-left" id="breath-left"></div>
+    </div>
+    <button class="primary big" id="btn-breath">開始呼吸</button>
+  </section>
+
+  <!-- 遊戲 -->
+  <section id="view-games" class="view">
+    <h2>注意力小遊戲</h2>
+    <div class="chips" id="game-pick">
+      <button data-game="schulte" class="on">舒爾特方格</button>
+      <button data-game="stroop">Stroop 色字</button>
+    </div>
+
+    <div id="game-schulte">
+      <p class="hint">依序點 1 → 25，愈快愈好。訓練視覺搜索與注意力廣度。</p>
+      <div class="game-bar"><span id="sch-next">下一個：1</span><span id="sch-time">0.0s</span></div>
+      <div class="grid" id="sch-grid"></div>
+      <button class="primary" id="btn-sch">開始</button>
+      <p class="result" id="sch-result"></p>
+    </div>
+
+    <div id="game-stroop" hidden>
+      <p class="hint">選「字的顏色」，不是字的意思。20 題，訓練抑制與選擇性注意。</p>
+      <div class="game-bar"><span id="str-progress">0 / 20</span><span id="str-acc">正確 0</span></div>
+      <div class="stroop-word" id="str-word">—</div>
+      <div class="stroop-opts" id="str-opts">
+        <button data-c="red">紅</button>
+        <button data-c="blue">藍</button>
+        <button data-c="green">綠</button>
+        <button data-c="yellow">黃</button>
+      </div>
+      <button class="primary" id="btn-str">開始</button>
+      <p class="result" id="str-result"></p>
+    </div>
+  </section>
+
+  <!-- 紀錄 -->
+  <section id="view-stats" class="view">
+    <h2>紀錄</h2>
+    <div class="tiles">
+      <div class="tile"><b id="st-streak">0</b><span>連續天數</span></div>
+      <div class="tile"><b id="st-today">0</b><span>今日專注分</span></div>
+      <div class="tile"><b id="st-total">0</b><span>30 天總分鐘</span></div>
+      <div class="tile"><b id="st-rate">—</b><span>每小時分心</span></div>
+    </div>
+    <h3>近 30 天專注分鐘</h3>
+    <div class="chart" id="ch-minutes"></div>
+    <h3>每小時分心次數（週趨勢）</h3>
+    <div class="chart" id="ch-dist"></div>
+    <h3>分心原因</h3>
+    <div class="bars" id="ch-reasons"></div>
+    <h3>遊戲進步</h3>
+    <div class="bars" id="ch-games"></div>
+    <h3>最近紀錄</h3>
+    <ul class="log" id="log-list"></ul>
+    <div class="row data-row">
+      <button class="ghost" id="btn-export">匯出 JSON</button>
+      <label class="ghost btn-like">匯入 JSON<input id="file-import" type="file" accept="application/json" hidden></label>
+      <button class="ghost danger" id="btn-clear">清除全部</button>
+    </div>
+  </section>
+</main>
+
+<nav class="tabs">
+  <button data-view="focus" class="on">⏱ 專注</button>
+  <button data-view="breath">🌬 呼吸</button>
+  <button data-view="games">🎯 遊戲</button>
+  <button data-view="stats">📈 紀錄</button>
+</nav>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="js/store.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/timer.js"></script>
+<script src="js/breath.js"></script>
+<script src="js/games.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

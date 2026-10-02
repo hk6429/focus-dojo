@@ -1,0 +1,16 @@
+{
+  "name": "專注道場",
+  "short_name": "專注道場",
+  "description": "個人專注力訓練：計時、呼吸、小遊戲、紀錄",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f4ef",
+  "theme_color": "#1f6f5f",
+  "lang": "zh-Hant-TW",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
