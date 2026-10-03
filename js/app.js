@@ -6,11 +6,12 @@
     UI.$$('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.view === view));
     if (view === 'stats') Stats.render();
     if (view === 'dojo') Game.renderDojo();
+    window.scrollTo(0, 0);
     try { localStorage.setItem('focus-dojo-tab', view); } catch {}
   }
   tabs.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    if (Timer.isRunning() && b.dataset.view !== 'focus') { UI.toast('計時中，先完成或放棄'); return; }
+    if (Timer.isRunning() && b.dataset.view !== 'focus') { UI.toast('計時中，先結束這一坐'); return; }
     go(b.dataset.view);
   });
   let saved = 'focus';

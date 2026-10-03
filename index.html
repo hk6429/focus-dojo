@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="css/style.css?v=4">
+<link rel="stylesheet" href="css/style.css?v=5">
 </head>
 <body>
 <header class="top">
@@ -19,37 +19,37 @@
   <div class="streak" id="hdr-streak" title="本週完成天數">本週 0/5 天</div>
 </header>
 <div class="belt-wrap"><div class="belt-line" id="belt-line"></div><div class="belt-track"><i id="belt-bar"></i></div></div>
-<header hidden>
-</header>
 
 <main>
   <!-- 專注計時 -->
   <section id="view-focus" class="view active">
     <div id="focus-setup">
-      <p class="quote" id="quote"></p>
-      <p class="mission" id="mission-line"></p>
-      <div class="challenge" id="challenge" hidden><span id="challenge-text"></span><div class="row"><button class="ghost" id="challenge-skip">略過</button><button class="primary" id="challenge-accept">接受挑戰</button></div></div>
-      <div class="trial" id="trial-card"></div>
+      <div class="challenge" id="challenge" hidden><span id="challenge-text"></span><div class="row"><button class="ghost" id="challenge-skip">略過</button><button class="primary" id="challenge-accept">接受同坐</button></div></div>
       <label class="field">
         <span>這段時間要做什麼？</span>
         <input id="task-input" type="text" maxlength="40" placeholder="例：改作文 / 讀一章書" autocomplete="off">
       </label>
+      <p class="last-note" id="last-note" hidden></p>
       <details class="intent">
-        <summary>設定意圖（選填，30 秒）</summary>
+        <summary>先想一下（選填，30 秒）</summary>
         <label class="field"><span>做完會是什麼樣子？</span><input id="outcome-input" type="text" maxlength="60" placeholder="例：三篇改完、評語寫好"></label>
         <label class="field"><span>最可能的分心是什麼？到時我會…</span><input id="ifthen-input" type="text" maxlength="60" placeholder="例：手機響 → 翻面不看，結束再回"></label>
       </details>
       <div class="chips" id="minute-chips">
+        <button data-min="10">10</button>
         <button data-min="15">15</button>
         <button data-min="25" class="on">25</button>
         <button data-min="45">45</button>
         <button data-min="60">60</button>
-        <input id="minute-custom" type="number" min="1" max="180" placeholder="自訂">
+        <input id="minute-custom" type="number" min="5" max="180" placeholder="自訂" inputmode="numeric">
       </div>
       <p class="goal-line" id="goal-line"></p>
       <p class="suggest" id="suggest" hidden></p>
       <button class="primary big" id="btn-start">開始專注</button>
-      <p class="hint">計時中若分心，按一下原因記下來。離開畫面超過 10 秒，回來會問你一句是不是分心。做滿 5 分鐘或做完才算進每週天數。</p>
+      <p class="hint">分心時按一下原因記下來。做滿 5 分鐘才算一坐；離開畫面的時間不算進去，回來會問你一句。</p>
+      <p class="mission" id="mission-line"></p>
+      <div class="trial" id="trial-card"></div>
+      <p class="quote" id="quote"></p>
     </div>
 
     <div id="focus-running" hidden>
@@ -64,19 +64,25 @@
       </div>
       <div class="dist-count">分心 <b id="run-dist">0</b> 次</div>
       <div class="away-ask" id="away-ask" hidden><span id="away-text"></span><button data-yes="1">是</button><button>不是</button></div>
+      <p class="hint center small">分心了？按一下原因</p>
       <div class="reasons">
         <button data-reason="手機">📱 手機</button>
+        <button data-reason="訊息">💬 訊息</button>
         <button data-reason="雜念">💭 雜念</button>
         <button data-reason="他人">🗣️ 他人</button>
         <button data-reason="其他">❓ 其他</button>
       </div>
-      <div class="park" id="park" hidden>
-        <input id="park-input" type="text" maxlength="60" placeholder="想到什麼？記一句，結束再處理">
+      <div class="park" id="park">
+        <input id="park-input" type="text" maxlength="60" placeholder="想到什麼？先記一句，結束再處理">
         <button id="park-save">存</button>
       </div>
-      <div class="row">
-        <button class="ghost" id="btn-abort">放棄</button>
+      <div class="row end-row" id="end-row">
         <button class="secondary" id="btn-finish">提早結束</button>
+        <button class="link-btn" id="btn-abort">這回不算</button>
+      </div>
+      <div class="end-confirm" id="end-confirm" hidden>
+        <p id="end-confirm-text"></p>
+        <div class="row"><button class="ghost" id="end-cancel">取消</button><button class="primary" id="end-ok">確定</button></div>
       </div>
     </div>
 
@@ -91,10 +97,20 @@
       </div>
       <p class="hint center" id="done-challenge"></p>
       <div class="parked" id="parked" hidden><p>剛才停車的念頭，現在去處理：</p><ul id="parked-list"></ul></div>
-      <div class="exp-ask" id="exp-ask" hidden><span></span><button data-yes="1">有效</button><button data-yes="0">沒用</button></div>
-      <div class="exp"><select id="exp-pick"></select><input id="exp-custom" type="text" maxlength="40" placeholder="寫下你的招式" hidden></div>
-      <p class="hint center" id="tip-line"></p>
-      <button class="ghost wide" id="btn-share">📤 分享成果卡／發出挑戰</button>
+      <div id="exp-wrap">
+        <div class="exp-ask" id="exp-ask" hidden><span></span><button data-yes="1">有效</button><button data-yes="0">沒用</button></div>
+        <details class="more"><summary>下回想試一招？（選填）</summary>
+          <div class="exp"><select id="exp-pick"></select><input id="exp-custom" type="text" maxlength="40" placeholder="寫下你的招式" hidden></div>
+          <p class="hint center" id="tip-line"></p>
+        </details>
+      </div>
+      <button class="ghost wide" id="btn-share">📤 成果卡／邀人同坐</button>
+      <div class="share-box" id="share-box" hidden>
+        <img id="card-img" alt="成果卡預覽">
+        <label class="check"><input type="checkbox" id="share-hide"> 卡片上不顯示任務名稱</label>
+        <p class="hint small">邀約連結只含你的稱呼與分鐘數，不含任務內容。</p>
+        <div class="row"><button class="ghost" id="share-copy">複製一行摘要</button><button class="primary" id="share-send">分享／下載</button></div>
+      </div>
       <div class="rest-box" id="rest-box" hidden><span>休息</span><b id="rest-clock">05:00</b></div>
       <div class="row">
         <button class="secondary" id="btn-rest">休息一下</button>
@@ -131,13 +147,14 @@
   <!-- 遊戲 -->
   <section id="view-games" class="view">
     <h2>開工前狀態檢測</h2>
+    <p class="hint">這不是訓練，是量體溫：看今天和你平常比快或慢，再決定先做重的還是輕的。</p>
     <div class="chips" id="game-pick">
-      <button data-game="schulte" class="on">舒爾特方格</button>
-      <button data-game="stroop">Stroop 色字</button>
+      <button data-game="schulte" class="on">找數字</button>
+      <button data-game="stroop">顏色反應</button>
     </div>
 
     <div id="game-schulte">
-      <p class="hint">依序點 1 → 25。眼睛盯著中央格、用餘光找數字，不要掃視。這是狀態檢測，不是訓練；看的是今天和平常比快或慢。</p>
+      <p class="hint">依序點 1 → 25。眼睛盯著中央格、用餘光找數字。（這叫舒爾特方格）</p>
       <button class="primary big" id="btn-sch">開始</button>
       <div class="game-bar"><span id="sch-next">下一個：1</span><span id="sch-time">0.0s</span></div>
       <div class="grid idle" id="sch-grid"></div>
@@ -145,7 +162,7 @@
     </div>
 
     <div id="game-stroop" hidden>
-      <p class="hint">選「字的顏色」，不是字的意思。40 題，看「＋」出現後再作答。結果看干擾量（不一致 − 一致），越小代表今天抑制越穩。</p>
+      <p class="hint">40 題。看到「＋」後出現一個字，按「字的顏色」，不是字的意思。（這叫 Stroop）</p>
       <button class="primary big" id="btn-str">開始</button>
       <div class="game-bar"><span id="str-progress">0 / 40</span><span id="str-acc">正確 0</span></div>
       <div class="stroop-word" id="str-word">—</div>
@@ -162,19 +179,22 @@
   <!-- 道場 -->
   <section id="view-dojo" class="view">
     <h2>我的道場</h2>
-    <label class="field"><span>道號（成果卡與挑戰會顯示）</span><input id="dojo-name" type="text" maxlength="12" placeholder="例：大乃"></label>
+    <label class="field"><span>你的稱呼（成果卡與邀約會顯示）</span><input id="dojo-name" type="text" maxlength="12" placeholder="例：大乃"></label>
     <label class="field"><span>我為什麼練專注？</span><input id="dojo-mission" type="text" maxlength="40" placeholder="例：把時間還給家人和寫作"></label>
-    <h3>段位與道場配色</h3>
+    <h3>等級（段位）與配色</h3>
     <div class="theme-pick" id="theme-pick"></div>
-    <p class="hint">段位依累積計入分鐘：黃帶 100、綠帶 500、藍帶 1500、黑帶 4000。14 天不坐降一級，回來坐就恢復。</p>
-    <h3>徽章 <small id="badge-count"></small></h3>
+    <p class="hint">等級依累積做滿的分鐘：黃帶 100、綠帶 500、藍帶 1500、黑帶 4000。超過兩週沒練會暫時往回一格，回來坐一次就恢復。</p>
+    <p class="hint warn" id="decay-note"></p>
+    <h3>深淺色</h3>
+    <div class="chips" id="dark-pick"><button data-dark="auto" class="on">跟隨系統</button><button data-dark="light">淺色</button><button data-dark="dark">深色</button></div>
+    <h3>里程碑（徽章） <small id="badge-count"></small></h3>
     <div class="badge-grid" id="badge-grid"></div>
     <h3>洞察</h3>
     <div id="insights"></div>
     <h3>我的招式</h3>
     <div id="moves"></div>
     <h3>自訂分心原因（最多 4 個）</h3>
-    <div class="park"><input id="custom-input" type="text" maxlength="6" placeholder="例：小孩、LINE"><button id="custom-add">加入</button></div>
+    <div class="park"><input id="custom-input" type="text" maxlength="6" placeholder="例：小孩、LINE、Slack"><button id="custom-add">加入</button></div>
     <div class="chips" id="custom-list"></div>
   </section>
 
@@ -185,8 +205,7 @@
       <div class="tile"><b id="st-streak">0</b><span>連續天數</span></div>
       <div class="tile"><b id="st-quality">—</b><span>30 天品質</span></div>
       <div class="tile"><b id="st-today">0</b><span>今日專注分</span></div>
-
-      <div class="tile"><b id="st-rate">—</b><span>每 25 分分心</span></div>
+      <div class="tile"><b id="st-rate">—</b><span>每小時分心</span></div>
     </div>
     <h3>目標</h3>
     <div class="settings">
@@ -195,7 +214,7 @@
     </div>
     <h3>近 30 天專注分鐘</h3>
     <div class="chart" id="ch-minutes"></div>
-    <h3>每 25 分鐘分心次數（週趨勢）</h3>
+    <h3>每小時分心次數（週趨勢）</h3>
     <div class="chart" id="ch-dist"></div>
     <h3>分心原因</h3>
     <div class="bars" id="ch-reasons"></div>
@@ -204,15 +223,19 @@
     <div class="bars" id="ch-games"></div>
     <h3>最近紀錄</h3>
     <ul class="log" id="log-list"></ul>
+    <h3>備份與匯出</h3>
     <div class="row data-row">
-      <button class="ghost" id="btn-export">匯出 JSON</button>
-      <label class="ghost btn-like">匯入 JSON<input id="file-import" type="file" accept="application/json" hidden></label>
-      <button class="ghost danger" id="btn-clear">清除全部</button>
+      <button class="ghost" id="btn-csv">匯出 CSV（進試算表）</button>
+      <button class="ghost" id="btn-export">備份 JSON</button>
+      <label class="ghost btn-like">還原 JSON<input id="file-import" type="file" accept="application/json" hidden></label>
     </div>
-    <div class="row" id="clear-confirm" hidden>
-      <button class="ghost" id="btn-clear-no">取消</button>
-      <button class="danger-solid" id="btn-clear-yes">確定清除全部紀錄</button>
-    </div>
+    <details class="more danger-zone"><summary>清除全部紀錄</summary>
+      <button class="ghost danger wide" id="btn-clear">清除全部</button>
+      <div class="row" id="clear-confirm" hidden>
+        <button class="ghost" id="btn-clear-no">取消</button>
+        <button class="danger-solid" id="btn-clear-yes">確定清除全部紀錄</button>
+      </div>
+    </details>
   </section>
 </main>
 
@@ -229,24 +252,29 @@
   <div class="modal-box">
     <h2>入門</h2>
     <ul>
-      <li>每一坐：設任務、按開始、分心就記一筆，做完給自己評分。</li>
-      <li>做滿 5 分鐘才算，累積分鐘升段位；14 天不坐會降一級。</li>
+      <li>每一坐：寫任務、按開始、分心就記一筆，做完給自己評分。</li>
+      <li>做滿 5 分鐘就算一坐；累積分鐘會升等級。超過兩週沒練會暫時往回一格，回來坐一次就恢復。</li>
       <li>這裡沒有排行榜，只有昨天的你。</li>
     </ul>
-    <label class="field"><span>道號</span><input id="ob-name" type="text" maxlength="12" placeholder="例：大乃"></label>
-    <label class="field"><span>我為什麼練專注？</span><input id="ob-mission" type="text" maxlength="40" placeholder="一句話就好"></label>
-    <button class="primary big" id="onboard-go">開始修行</button>
+    <label class="field"><span>你的稱呼</span><input id="ob-name" type="text" maxlength="12" placeholder="例：大乃"></label>
+    <label class="field"><span>我為什麼練專注？（選填）</span><input id="ob-mission" type="text" maxlength="40" placeholder="一句話就好"></label>
+    <p class="field-label">最常把你拉走的是？（最多 4 個，之後可改）</p>
+    <div class="chips" id="ob-reasons">
+      <button data-r="LINE">LINE</button><button data-r="IG">IG</button><button data-r="Slack">Slack</button><button data-r="email">email</button>
+      <button data-r="同事">同事</button><button data-r="小孩">小孩</button><button data-r="遊戲">遊戲</button><button data-r="影片">影片</button>
+    </div>
+    <button class="primary big" id="onboard-go">開始</button>
   </div>
 </div>
 
-<script src="js/store.js?v=4"></script>
-<script src="js/ui.js?v=4"></script>
-<script src="js/quotes.js?v=4"></script>
-<script src="js/game.js?v=4"></script>
-<script src="js/timer.js?v=4"></script>
-<script src="js/breath.js?v=4"></script>
-<script src="js/games.js?v=4"></script>
-<script src="js/stats.js?v=4"></script>
-<script src="js/app.js?v=4"></script>
+<script src="js/store.js?v=5"></script>
+<script src="js/ui.js?v=5"></script>
+<script src="js/quotes.js?v=5"></script>
+<script src="js/game.js?v=5"></script>
+<script src="js/timer.js?v=5"></script>
+<script src="js/breath.js?v=5"></script>
+<script src="js/games.js?v=5"></script>
+<script src="js/stats.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
 </body>
 </html>

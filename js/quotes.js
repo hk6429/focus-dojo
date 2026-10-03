@@ -1,4 +1,4 @@
-// 每日語錄：公版古文＋自寫短句；每日試煉；回合後小提示
+// 每日語錄：公版古文＋自寫短句；今日小任務；回合後小提示
 const QUOTES = [
   ['不積跬步，無以至千里。', '荀子'],
   ['學而不思則罔，思而不學則殆。', '論語'],
@@ -16,9 +16,9 @@ const QUOTES = [
   ['其身正，不令而行。', '論語'],
   ['千里之行，始於足下。', '老子'],
   ['大道甚夷，而民好徑。', '老子'],
-  ['此心不動，隨機而動。', '王陽明'],
-  ['事上磨練，方立得住。', '王陽明'],
-  ['主一無適之謂敬。', '程頤'],
+  ['知之真切篤實處即是行。', '王陽明'],
+  ['人須在事上磨，方立得住。', '王陽明'],
+  ['主一無適之謂敬。', '朱熹'],
   ['業精於勤，荒於嬉。', '韓愈'],
   ['這裡沒有排行榜，只有昨天的你。', '道場'],
   ['分心不是失敗，是一筆資料。', '道場'],
@@ -32,18 +32,19 @@ const QUOTES = [
   ['今天的坐，是明天的本錢。', '道場'],
 ];
 
-// 每日試煉：依日期固定一題；check(ctx) 回傳是否達成
+// 今日小任務：依日期固定一題；check(ctx) 回傳是否達成。ctx.sessions 只含計入的回合。
+// 原則：只獎勵「有沒有做」，不獎勵自我申報的分心次數。
 const TRIALS = [
-  { id: 'zero25', name: '清淨一坐', desc: '完成一坐 ≥25 分且零分心', check: c => c.sessions.some(s => s.completed && s.actual >= 1500 && s.distractions.length === 0) },
-  { id: 'long45', name: '長坐', desc: '完成一坐 ≥45 分', check: c => c.sessions.some(s => s.completed && s.actual >= 2700) },
+  { id: 'long45', name: '長坐', desc: '做滿一坐 45 分', check: c => c.sessions.some(s => s.completed && s.actual >= 2700) },
   { id: 'two', name: '連坐兩回', desc: '今天完成兩坐', check: c => c.sessions.filter(s => s.completed).length >= 2 },
   { id: 'breath', name: '先吐納後坐', desc: '先呼吸 ≥3 分，再完成一坐', check: c => c.breaths.some(b => b.seconds >= 180) && c.sessions.some(s => s.completed) },
   { id: 'intent', name: '立意而坐', desc: '寫下意圖再完成一坐', check: c => c.sessions.some(s => s.completed && (s.outcome || s.ifthen)) },
-  { id: 'stroop', name: '心如止水', desc: 'Stroop 干擾量 <120 ms', check: c => c.games.some(g => g.type === 'stroop' && g.interference != null && g.interference < 120) },
-  { id: 'schulte', name: '眼明手快', desc: '舒爾特方格 <30 秒', check: c => c.games.some(g => g.type === 'schulte' && g.ms < 30000) },
+  { id: 'stroop', name: '色字一回', desc: '做一次顏色反應（正確 ≥36）', check: c => c.games.some(g => g.type === 'stroop' && g.correct >= 36) },
+  { id: 'schulte', name: '找數一回', desc: '做一次找數字（點錯 ≤2）', check: c => c.games.some(g => g.type === 'schulte' && g.wrong <= 2) },
   { id: 'park', name: '停車入庫', desc: '一坐中停車一個念頭並完成', check: c => c.sessions.some(s => s.completed && (s.parked || []).length) },
   { id: 'review', name: '自省', desc: '完成一坐並給出品質評分', check: c => c.sessions.some(s => s.completed && s.quality) },
-  { id: 'one', name: '容錯一坐', desc: '完成一坐 ≥25 分且分心 ≤1', check: c => c.sessions.some(s => s.completed && s.actual >= 1500 && s.distractions.length <= 1) },
+  { id: 'morning', name: '早坐', desc: '中午前完成一坐', check: c => c.sessions.some(s => s.completed && new Date(s.start).getHours() < 12) },
+  { id: 'fifty', name: '半百', desc: '今天累積 50 分鐘', check: c => c.sessions.reduce((a, s) => a + s.actual, 0) >= 3000 },
 ];
 
 const TIPS = [
