@@ -34,8 +34,9 @@
         <button data-min="60">60</button>
         <input id="minute-custom" type="number" min="1" max="180" placeholder="自訂">
       </div>
+      <p class="suggest" id="suggest" hidden></p>
       <button class="primary big" id="btn-start">開始專注</button>
-      <p class="hint">計時中若分心，按一下「分心」記下原因；切到別的頁面會自動記為分心。</p>
+      <p class="hint">計時中若分心，按一下原因記下來。離開畫面超過 10 秒，回來會問你一句是不是分心。做滿 5 分鐘或做完才算連續天數。</p>
     </div>
 
     <div id="focus-running" hidden>
@@ -48,6 +49,7 @@
         <div class="ring-text" id="run-clock">25:00</div>
       </div>
       <div class="dist-count">分心 <b id="run-dist">0</b> 次</div>
+      <div class="away-ask" id="away-ask" hidden><span id="away-text"></span><button data-yes="1">是</button><button>不是</button></div>
       <div class="reasons">
         <button data-reason="手機">📱 手機</button>
         <button data-reason="雜念">💭 雜念</button>
@@ -56,14 +58,19 @@
       </div>
       <div class="row">
         <button class="ghost" id="btn-abort">放棄</button>
-        <button class="secondary" id="btn-finish">提早完成</button>
+        <button class="secondary" id="btn-finish">提早結束</button>
       </div>
     </div>
 
     <div id="focus-done" hidden>
-      <h2>完成 ✔</h2>
+      <h2 id="done-title">完成 ✔</h2>
       <p id="done-summary"></p>
-      <button class="primary" id="btn-again">再來一回</button>
+      <p class="hint center" id="done-note"></p>
+      <div class="rest-box" id="rest-box" hidden><span>休息</span><b id="rest-clock">05:00</b></div>
+      <div class="row">
+        <button class="secondary" id="btn-rest">休息一下</button>
+        <button class="primary" id="btn-again">再來一回</button>
+      </div>
     </div>
   </section>
 
@@ -71,12 +78,13 @@
   <section id="view-breath" class="view">
     <h2>呼吸熱身</h2>
     <div class="chips" id="breath-mode">
-      <button data-mode="478" class="on">4-7-8</button>
+      <button data-mode="46" class="on">4 吸 6 吐</button>
+      <button data-mode="478">4-7-8（進階）</button>
       <button data-mode="box">方塊 4-4-4-4</button>
     </div>
     <div class="chips" id="breath-len">
-      <button data-sec="60" class="on">1 分</button>
-      <button data-sec="180">3 分</button>
+      <button data-sec="60">1 分</button>
+      <button data-sec="180" class="on">3 分</button>
       <button data-sec="300">5 分</button>
     </div>
     <div class="breath-stage">
@@ -84,27 +92,29 @@
       <div class="breath-left" id="breath-left"></div>
     </div>
     <button class="primary big" id="btn-breath">開始呼吸</button>
+    <p class="hint">吐氣比吸氣長最穩；閉氣不舒服就用 4 吸 6 吐。</p>
   </section>
 
   <!-- 遊戲 -->
   <section id="view-games" class="view">
-    <h2>注意力小遊戲</h2>
+    <h2>開工前狀態檢測</h2>
     <div class="chips" id="game-pick">
       <button data-game="schulte" class="on">舒爾特方格</button>
       <button data-game="stroop">Stroop 色字</button>
     </div>
 
     <div id="game-schulte">
-      <p class="hint">依序點 1 → 25，愈快愈好。訓練視覺搜索與注意力廣度。</p>
+      <p class="hint">依序點 1 → 25。眼睛盯著中央格、用餘光找數字，不要掃視。這是狀態檢測，不是訓練；看的是今天和平常比快或慢。</p>
+      <button class="primary big" id="btn-sch">開始</button>
       <div class="game-bar"><span id="sch-next">下一個：1</span><span id="sch-time">0.0s</span></div>
-      <div class="grid" id="sch-grid"></div>
-      <button class="primary" id="btn-sch">開始</button>
+      <div class="grid idle" id="sch-grid"></div>
       <p class="result" id="sch-result"></p>
     </div>
 
     <div id="game-stroop" hidden>
-      <p class="hint">選「字的顏色」，不是字的意思。20 題，訓練抑制與選擇性注意。</p>
-      <div class="game-bar"><span id="str-progress">0 / 20</span><span id="str-acc">正確 0</span></div>
+      <p class="hint">選「字的顏色」，不是字的意思。40 題，看「＋」出現後再作答。結果看干擾量（不一致 − 一致），越小代表今天抑制越穩。</p>
+      <button class="primary big" id="btn-str">開始</button>
+      <div class="game-bar"><span id="str-progress">0 / 40</span><span id="str-acc">正確 0</span></div>
       <div class="stroop-word" id="str-word">—</div>
       <div class="stroop-opts" id="str-opts">
         <button data-c="red">紅</button>
@@ -112,7 +122,6 @@
         <button data-c="green">綠</button>
         <button data-c="yellow">黃</button>
       </div>
-      <button class="primary" id="btn-str">開始</button>
       <p class="result" id="str-result"></p>
     </div>
   </section>
@@ -124,15 +133,16 @@
       <div class="tile"><b id="st-streak">0</b><span>連續天數</span></div>
       <div class="tile"><b id="st-today">0</b><span>今日專注分</span></div>
       <div class="tile"><b id="st-total">0</b><span>30 天總分鐘</span></div>
-      <div class="tile"><b id="st-rate">—</b><span>每小時分心</span></div>
+      <div class="tile"><b id="st-rate">—</b><span>每 25 分分心</span></div>
     </div>
     <h3>近 30 天專注分鐘</h3>
     <div class="chart" id="ch-minutes"></div>
-    <h3>每小時分心次數（週趨勢）</h3>
+    <h3>每 25 分鐘分心次數（週趨勢）</h3>
     <div class="chart" id="ch-dist"></div>
     <h3>分心原因</h3>
     <div class="bars" id="ch-reasons"></div>
-    <h3>遊戲進步</h3>
+    <p class="hint" id="away-note"></p>
+    <h3>狀態檢測</h3>
     <div class="bars" id="ch-games"></div>
     <h3>最近紀錄</h3>
     <ul class="log" id="log-list"></ul>
@@ -140,6 +150,10 @@
       <button class="ghost" id="btn-export">匯出 JSON</button>
       <label class="ghost btn-like">匯入 JSON<input id="file-import" type="file" accept="application/json" hidden></label>
       <button class="ghost danger" id="btn-clear">清除全部</button>
+    </div>
+    <div class="row" id="clear-confirm" hidden>
+      <button class="ghost" id="btn-clear-no">取消</button>
+      <button class="danger-solid" id="btn-clear-yes">確定清除全部紀錄</button>
     </div>
   </section>
 </main>

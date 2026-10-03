@@ -1,8 +1,11 @@
-// 專注計時：以結束時刻為準，背景也不漂移
+// 專注計時：以結束時刻為準，進行中狀態落地 localStorage，可續算
 const Timer = (() => {
   const $ = UI.$;
-  let plannedMin = 25, endAt = 0, startAt = 0, tick = null, distractions = [], task = '', running = false;
+  const RUN_KEY = 'focus-dojo-run';
   const CIRC = 2 * Math.PI * 90;
+  let run = null;          // {task, plannedMin, startAt, endAt, distractions, away}
+  let tick = null, leftAt = 0, restTick = null;
+  let plannedMin = 25;
 
   const getMin = UI.chips('#minute-chips', 'min', v => { plannedMin = +v; $('#minute-custom').value = ''; });
   $('#minute-custom').addEventListener('input', e => {
@@ -10,58 +13,127 @@ const Timer = (() => {
     if (v >= 1 && v <= 180) { plannedMin = v; UI.$$('#minute-chips button').forEach(b => b.classList.remove('on')); }
   });
 
+  const persist = () => { try { run ? localStorage.setItem(RUN_KEY, JSON.stringify(run)) : localStorage.removeItem(RUN_KEY); } catch {} };
   function show(which) {
     ['setup', 'running', 'done'].forEach(k => ($(`#focus-${k}`).hidden = k !== which));
+    if (which === 'setup') renderSuggest();
   }
+  function renderSuggest() {
+    const s = Store.suggest(plannedMin), el = $('#suggest');
+    if (!s) { el.hidden = true; return; }
+    el.hidden = false;
+    el.innerHTML = `${s.why}，試試 <b>${s.min} 分</b>？<button class="link" data-min="${s.min}">採用</button>`;
+  }
+  $('#suggest').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    plannedMin = +b.dataset.min; $('#minute-custom').value = plannedMin;
+    UI.$$('#minute-chips button').forEach(x => x.classList.toggle('on', +x.dataset.min === plannedMin));
+    $('#suggest').hidden = true;
+  });
+
   function render() {
-    const left = (endAt - Date.now()) / 1000;
+    if (!run) return;
+    const left = (run.endAt - Date.now()) / 1000;
     $('#run-clock').textContent = UI.mmss(left);
-    const total = plannedMin * 60;
-    $('#ring-fg').style.strokeDashoffset = CIRC * (1 - Math.max(0, left) / total);
-    document.title = running ? `${UI.mmss(left)} · 專注道場` : '專注道場';
+    $('#ring-fg').style.strokeDashoffset = CIRC * (1 - Math.max(0, left) / (run.plannedMin * 60));
+    document.title = `${UI.mmss(left)} · 專注道場`;
     if (left <= 0) finish(true);
   }
+  function begin(r) {
+    run = r; persist();
+    $('#run-task').textContent = run.task; $('#run-dist').textContent = run.distractions.length;
+    $('#btn-finish').textContent = '提早結束';
+    show('running'); render(); clearInterval(tick); tick = setInterval(render, 500);
+  }
   function start() {
-    task = $('#task-input').value.trim() || '未命名任務';
+    const task = $('#task-input').value.trim() || '未命名任務';
     plannedMin = +(getMin() || plannedMin);
-    distractions = []; startAt = Date.now(); endAt = startAt + plannedMin * 60000; running = true;
-    $('#run-task').textContent = task; $('#run-dist').textContent = '0';
-    $('#ring-fg').style.strokeDashoffset = 0;
-    show('running'); render(); tick = setInterval(render, 500);
+    const now = Date.now();
+    begin({ task, plannedMin, startAt: now, endAt: now + plannedMin * 60000, distractions: [], away: [] });
     UI.beep(520, .1);
   }
   function distract(reason) {
-    if (!running) return;
-    distractions.push({ t: Math.round((Date.now() - startAt) / 1000), reason });
-    $('#run-dist').textContent = distractions.length;
+    if (!run) return;
+    run.distractions.push({ t: Math.round((Date.now() - run.startAt) / 1000), reason });
+    $('#run-dist').textContent = run.distractions.length; persist();
     UI.vibrate(30);
   }
-  function stop() { running = false; clearInterval(tick); tick = null; document.title = '專注道場'; }
+  function stop() { clearInterval(tick); tick = null; document.title = '專注道場'; $('#away-ask').hidden = true; }
   function finish(completed) {
-    if (!running) return;
+    if (!run) return;
     stop();
-    const actual = Math.min(plannedMin * 60, Math.round((Date.now() - startAt) / 1000));
-    Store.addSession({ date: Store.today(), start: startAt, task, planned: plannedMin * 60, actual, completed, distractions });
-    $('#done-summary').textContent = `${task} · 專注 ${Math.round(actual / 60)} 分鐘 · 分心 ${distractions.length} 次` + (completed ? '' : '（提早結束）');
+    const actual = Math.min(run.plannedMin * 60, Math.round((Date.now() - run.startAt) / 1000));
+    const s = { date: Store.today(), start: run.startAt, task: run.task, planned: run.plannedMin * 60, actual, completed, distractions: run.distractions, away: run.away };
+    Store.addSession(s);
+    const mins = Math.round(actual / 60);
+    $('#done-title').textContent = completed ? '完成 ✔' : '提早結束';
+    $('#done-summary').textContent = `${run.task} · 專注 ${mins} 分鐘 · 分心 ${run.distractions.length} 次`;
+    $('#done-note').textContent = Store.counts(s) ? `今天已累積連續 ${Store.streak()} 天` : '做滿 5 分鐘或做完才算進連續天數';
+    run = null; persist();
     show('done');
     UI.beep(784, .2, completed ? 3 : 1); UI.vibrate([80, 60, 80]);
   }
   function abort() {
-    if (!running) return;
-    stop(); show('setup'); UI.toast('已放棄，這回不計入');
+    if (!run) return;
+    stop();
+    const actual = Math.round((Date.now() - run.startAt) / 1000);
+    Store.addSession({ date: Store.today(), start: run.startAt, task: run.task, planned: run.plannedMin * 60, actual, completed: false, aborted: true, distractions: run.distractions, away: run.away });
+    run = null; persist(); show('setup'); UI.toast('已放棄，不計入統計');
+  }
+
+  // 休息計時
+  function rest(min) {
+    const end = Date.now() + min * 60000, el = $('#rest-clock');
+    $('#rest-box').hidden = false; $('#btn-rest').hidden = true;
+    clearInterval(restTick);
+    restTick = setInterval(() => {
+      const left = (end - Date.now()) / 1000; el.textContent = UI.mmss(left);
+      if (left <= 0) { clearInterval(restTick); el.textContent = '休息結束'; UI.beep(660, .2, 2); UI.vibrate([80, 60, 80]); }
+    }, 500);
   }
 
   $('#btn-start').addEventListener('click', start);
-  $('#btn-finish').addEventListener('click', () => finish(false));
+  let armed = false;
+  $('#btn-finish').addEventListener('click', e => {
+    if (!armed) { armed = true; e.target.textContent = '確定結束？'; setTimeout(() => { armed = false; if (run) e.target.textContent = '提早結束'; }, 4000); return; }
+    armed = false; finish(false);
+  });
   $('#btn-abort').addEventListener('click', abort);
-  $('#btn-again').addEventListener('click', () => show('setup'));
+  $('#btn-again').addEventListener('click', () => { clearInterval(restTick); $('#rest-box').hidden = true; $('#btn-rest').hidden = false; show('setup'); });
+  $('#btn-rest').addEventListener('click', () => {
+    const n = Store.get().sessions.filter(s => s.date === Store.today() && Store.counts(s)).length;
+    rest(n > 0 && n % 4 === 0 ? 15 : 5);
+  });
   $('#focus-running .reasons').addEventListener('click', e => {
     const b = e.target.closest('button'); b && distract(b.dataset.reason);
   });
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden && running) distract('離開畫面');
-  });
-  window.addEventListener('beforeunload', e => { if (running) { e.preventDefault(); e.returnValue = ''; } });
 
-  return { isRunning: () => running };
+  // 離開畫面：<10 秒忽略；≥10 秒回來時問一句，另存 away，不直接混進分心
+  document.addEventListener('visibilitychange', () => {
+    if (!run) return;
+    if (document.hidden) { leftAt = Date.now(); return; }
+    if (!leftAt) return;
+    const sec = Math.round((Date.now() - leftAt) / 1000); leftAt = 0;
+    if (sec < 10) return;
+    run.away.push({ t: Math.round((Date.now() - run.startAt) / 1000), sec }); persist();
+    $('#away-text').textContent = `剛才離開 ${sec} 秒，是分心嗎？`;
+    $('#away-ask').hidden = false;
+  });
+  $('#away-ask').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.yes) distract('離開畫面');
+    $('#away-ask').hidden = true;
+  });
+  window.addEventListener('beforeunload', e => { if (run) { e.preventDefault(); e.returnValue = ''; } });
+
+  // 續算：重開頁面時若有進行中的回合
+  (() => {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(RUN_KEY) || 'null'); } catch {}
+    if (!saved) { renderSuggest(); return; }
+    if (saved.endAt <= Date.now()) { run = saved; finish(true); UI.toast('上回計時已在背景完成'); }
+    else { begin(saved); UI.toast('接續上回計時'); }
+  })();
+
+  return { isRunning: () => !!run };
 })();

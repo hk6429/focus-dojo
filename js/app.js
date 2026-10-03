@@ -14,7 +14,7 @@
   });
   let saved = 'focus';
   try { saved = localStorage.getItem('focus-dojo-tab') || 'focus'; } catch {}
-  go(saved === 'stats' ? 'stats' : 'focus');
+  go(Timer.isRunning() ? 'focus' : saved === 'stats' ? 'stats' : 'focus');
   Stats.render();
 
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {

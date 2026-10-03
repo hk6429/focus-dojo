@@ -60,7 +60,10 @@ input[type=text],input[type=number]{width:100%;font:inherit;padding:12px;border:
 .grid button{aspect-ratio:1;font-size:1.3rem;font-weight:700;padding:0;border-radius:10px;background:var(--card);border:1px solid var(--line)}
 .grid button.done{background:var(--accent);color:#fff;border-color:var(--accent)}
 .grid button.wrong{background:var(--warn);color:#fff}
+.grid.idle button{opacity:.35;pointer-events:none}
 .stroop-word{text-align:center;font-size:3.2rem;font-weight:900;height:120px;display:grid;place-items:center}
+.stroop-word.fix{color:var(--muted);font-size:2rem}
+.stroop-word.miss{opacity:.25}
 .stroop-word.red{color:var(--red)}.stroop-word.blue{color:var(--blue)}.stroop-word.green{color:var(--green)}.stroop-word.yellow{color:var(--yellow)}
 .stroop-opts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
 .stroop-opts button{padding:16px 0;font-size:1.1rem;font-weight:700}
@@ -88,3 +91,16 @@ input[type=text],input[type=number]{width:100%;font:inherit;padding:12px;border:
 .tabs button{flex:1;border-radius:0;background:transparent;padding:12px 0;color:var(--muted);font-size:.9rem}
 .tabs button.on{color:var(--accent);font-weight:700}
 .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:.9rem;z-index:9}
+
+.suggest{background:var(--card);border:1px dashed var(--accent);border-radius:12px;padding:10px 12px;font-size:.9rem;margin:10px 0 0}
+.suggest .link{background:transparent;color:var(--accent);font-weight:700;padding:0 6px}
+.away-ask{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px;font-size:.9rem}
+.away-ask button{padding:6px 14px}
+.center{text-align:center}
+.rest-box{text-align:center;margin:10px 0;font-size:1.1rem}
+.rest-box b{display:block;font-size:2rem;font-variant-numeric:tabular-nums}
+.danger-solid{background:var(--warn);color:#fff;font-weight:700}
+.kv{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:.9rem}
+.kv em{font-style:normal;font-weight:700;font-variant-numeric:tabular-nums}
+#btn-sch,#btn-str{margin-top:4px}
+.tile span{font-size:.7rem}
