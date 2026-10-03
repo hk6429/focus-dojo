@@ -1,7 +1,7 @@
 // 單一 localStorage key；所有資料走這裡
 const Store = (() => {
   const KEY = 'focus-dojo-v1';
-  const blank = () => ({ version: 1, sessions: [], breaths: [], games: [] });
+  const blank = () => ({ version: 1, sessions: [], breaths: [], games: [], settings: { dailyMin: 50, weekDays: 5 } });
   let data = load();
 
   function load() {
@@ -10,7 +10,7 @@ const Store = (() => {
       if (!raw) return blank();
       const d = JSON.parse(raw);
       if (!d || d.version !== 1) return blank();
-      return Object.assign(blank(), d);
+      const o = Object.assign(blank(), d); o.settings = Object.assign(blank().settings, d.settings || {}); return o;
     } catch { return blank(); }
   }
   function save() {
@@ -28,7 +28,19 @@ const Store = (() => {
   return {
     today, uid, counts,
     get: () => data,
-    addSession(s) { data.sessions.push({ id: uid(), ...s }); save(); },
+    addSession(s) { const o = { id: uid(), ...s }; data.sessions.push(o); save(); return o.id; },
+    updateSession(id, patch) { const s = data.sessions.find(x => x.id === id); if (s) { Object.assign(s, patch); save(); } },
+    setSetting(k, v) { data.settings[k] = v; save(); },
+    todayMin() { const t = today(); return data.sessions.filter(s => s.date === t && !s.aborted).reduce((a, s) => a + s.actual / 60, 0); },
+    // 本週（週一起）有計入回合的天數
+    weekDone() {
+      const days = new Set(data.sessions.filter(counts).map(s => s.date));
+      const d = new Date(); d.setHours(0, 0, 0, 0);
+      const dow = (d.getDay() + 6) % 7; // 週一=0
+      let n = 0;
+      for (let i = 0; i <= dow; i++) { const x = new Date(d); x.setDate(d.getDate() - i); if (days.has(today(x))) n++; }
+      return n;
+    },
     addBreath(b) { data.breaths.push({ id: uid(), ...b }); save(); },
     addGame(g) { data.games.push({ id: uid(), ...g }); save(); },
     exportJSON() { return JSON.stringify(data, null, 2); },

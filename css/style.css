@@ -104,3 +104,22 @@ input[type=text],input[type=number]{width:100%;font:inherit;padding:12px;border:
 .kv em{font-style:normal;font-weight:700;font-variant-numeric:tabular-nums}
 #btn-sch,#btn-str{margin-top:4px}
 .tile span{font-size:.7rem}
+
+.intent{margin:8px 0;border:1px solid var(--line);border-radius:12px;padding:6px 12px;background:var(--card)}
+.intent summary{cursor:pointer;color:var(--muted);font-size:.9rem}
+.intent-label{text-align:center;color:var(--muted);font-size:.85rem;margin:-4px 0 8px}
+.goal-line{text-align:center;color:var(--muted);font-size:.9rem;margin:8px 0 0}
+.goal-line b{color:var(--accent)}
+.park{display:flex;gap:8px;margin-top:10px}
+.park input{flex:1;padding:10px}
+.review{margin:14px 0;text-align:center}
+.review p{margin:0 0 6px;color:var(--muted);font-size:.9rem}
+.stars{display:flex;gap:8px;justify-content:center;margin-bottom:8px}
+.stars button{width:44px;height:44px;padding:0;border-radius:50%;font-weight:700}
+.stars button.on{background:var(--accent);color:#fff}
+.parked{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:10px 0}
+.parked p{margin:0 0 4px;font-size:.9rem;color:var(--muted)}
+.parked ul{margin:0;padding-left:1.2em}
+.next-row{margin-top:8px}
+.settings{display:flex;gap:16px;flex-wrap:wrap;font-size:.9rem}
+.settings input{width:64px;padding:6px 8px;border-radius:8px;text-align:center}

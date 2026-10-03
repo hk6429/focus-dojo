@@ -49,9 +49,12 @@ const Stats = (() => {
     const total30 = Object.values(minsByDay).reduce((a, b) => a + b, 0);
     const dist30 = Object.values(distByDay).reduce((a, b) => a + b, 0);
     const streak = Store.streak();
-    $('#st-streak').textContent = streak; $('#hdr-streak').textContent = `🔥 ${streak} 天`;
+    $('#st-streak').textContent = streak;
     $('#st-today').textContent = Math.round(minsByDay[today]);
-    $('#st-total').textContent = Math.round(total30);
+    const qs = sessions.filter(s => s.quality && s.date in minsByDay).map(s => s.quality);
+    $('#st-quality').textContent = qs.length ? (qs.reduce((x, y) => x + y, 0) / qs.length).toFixed(1) + '★' : '—';
+    const st = Store.get().settings; $('#set-daily').value = st.dailyMin; $('#set-week').value = st.weekDays;
+    $('#hdr-streak').textContent = `本週 ${Store.weekDone()}/${st.weekDays} 天`;
     const rateEl = $('#st-rate');
     if (total30 >= MIN_SAMPLE) { rateEl.textContent = (dist30 / (total30 / 25)).toFixed(1); rateEl.nextElementSibling.textContent = '每 25 分分心'; }
     else { rateEl.textContent = '—'; rateEl.nextElementSibling.textContent = `還需 ${Math.ceil(MIN_SAMPLE - total30)} 分`; }
@@ -77,9 +80,12 @@ const Stats = (() => {
     $('#ch-games').innerHTML = rows.length ? rows.map(([k, v]) => `<div class="kv"><span>${k}</span><em>${v}</em></div>`).join('') : '<p class="empty">還沒做過狀態檢測</p>';
 
     const log = [...sessions].sort((a, b) => b.start - a.start).slice(0, 15);
-    $('#log-list').innerHTML = log.length ? log.map(s => `<li><span>${esc(s.task)} · ${Math.round(s.actual / 60)} 分 · 分心 ${s.distractions.length}${s.aborted ? ' · 放棄' : s.completed ? '' : ' · 提早'}</span><span>${s.date.slice(5)}</span></li>`).join('')
+    $('#log-list').innerHTML = log.length ? log.map(s => `<li><span>${esc(s.task)} · ${Math.round(s.actual / 60)} 分 · 分心 ${s.distractions.length}${s.aborted ? ' · 放棄' : s.completed ? '' : ' · 提早'}${s.quality ? ' · ' + '★'.repeat(s.quality) : ''}</span><span>${s.date.slice(5)}</span></li>`).join('')
       : '<li class="empty">還沒有專注紀錄，去開始第一回吧</li>';
   }
+
+  $('#set-daily').addEventListener('change', e => { const v = +e.target.value; if (v >= 10 && v <= 600) Store.setSetting('dailyMin', v); });
+  $('#set-week').addEventListener('change', e => { const v = +e.target.value; if (v >= 1 && v <= 7) Store.setSetting('weekDays', v); });
 
   // 匯出／匯入／清除
   $('#btn-export').addEventListener('click', async () => {

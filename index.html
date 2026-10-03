@@ -16,7 +16,7 @@
 <body>
 <header class="top">
   <h1>專注道場</h1>
-  <div class="streak" id="hdr-streak" title="連續天數">🔥 0 天</div>
+  <div class="streak" id="hdr-streak" title="本週完成天數">本週 0/5 天</div>
 </header>
 
 <main>
@@ -27,6 +27,11 @@
         <span>這段時間要做什麼？</span>
         <input id="task-input" type="text" maxlength="40" placeholder="例：改作文 / 讀一章書" autocomplete="off">
       </label>
+      <details class="intent">
+        <summary>設定意圖（選填，30 秒）</summary>
+        <label class="field"><span>做完會是什麼樣子？</span><input id="outcome-input" type="text" maxlength="60" placeholder="例：三篇改完、評語寫好"></label>
+        <label class="field"><span>最可能的分心是什麼？到時我會…</span><input id="ifthen-input" type="text" maxlength="60" placeholder="例：手機響 → 翻面不看，結束再回"></label>
+      </details>
       <div class="chips" id="minute-chips">
         <button data-min="15">15</button>
         <button data-min="25" class="on">25</button>
@@ -34,13 +39,15 @@
         <button data-min="60">60</button>
         <input id="minute-custom" type="number" min="1" max="180" placeholder="自訂">
       </div>
+      <p class="goal-line" id="goal-line"></p>
       <p class="suggest" id="suggest" hidden></p>
       <button class="primary big" id="btn-start">開始專注</button>
-      <p class="hint">計時中若分心，按一下原因記下來。離開畫面超過 10 秒，回來會問你一句是不是分心。做滿 5 分鐘或做完才算連續天數。</p>
+      <p class="hint">計時中若分心，按一下原因記下來。離開畫面超過 10 秒，回來會問你一句是不是分心。做滿 5 分鐘或做完才算進每週天數。</p>
     </div>
 
     <div id="focus-running" hidden>
       <p class="task-label" id="run-task"></p>
+      <p class="intent-label" id="run-intent" hidden></p>
       <div class="ring-wrap">
         <svg class="ring" viewBox="0 0 200 200">
           <circle class="ring-bg" cx="100" cy="100" r="90"/>
@@ -56,6 +63,10 @@
         <button data-reason="他人">🗣️ 他人</button>
         <button data-reason="其他">❓ 其他</button>
       </div>
+      <div class="park" id="park" hidden>
+        <input id="park-input" type="text" maxlength="60" placeholder="想到什麼？記一句，結束再處理">
+        <button id="park-save">存</button>
+      </div>
       <div class="row">
         <button class="ghost" id="btn-abort">放棄</button>
         <button class="secondary" id="btn-finish">提早結束</button>
@@ -66,10 +77,20 @@
       <h2 id="done-title">完成 ✔</h2>
       <p id="done-summary"></p>
       <p class="hint center" id="done-note"></p>
+      <div class="review" id="review">
+        <p>這回專注品質？</p>
+        <div class="stars" id="stars"><button data-q="1">1</button><button data-q="2">2</button><button data-q="3">3</button><button data-q="4">4</button><button data-q="5">5</button></div>
+        <input id="review-note" type="text" maxlength="80" placeholder="下回想調整什麼？（選填）">
+      </div>
+      <div class="parked" id="parked" hidden><p>剛才停車的念頭，現在去處理：</p><ul id="parked-list"></ul></div>
       <div class="rest-box" id="rest-box" hidden><span>休息</span><b id="rest-clock">05:00</b></div>
       <div class="row">
         <button class="secondary" id="btn-rest">休息一下</button>
         <button class="primary" id="btn-again">再來一回</button>
+      </div>
+      <div class="row next-row">
+        <button class="ghost" data-go="breath">🌬 呼吸 1 分</button>
+        <button class="ghost" data-go="games">🎯 狀態檢測</button>
       </div>
     </div>
   </section>
@@ -131,9 +152,15 @@
     <h2>紀錄</h2>
     <div class="tiles">
       <div class="tile"><b id="st-streak">0</b><span>連續天數</span></div>
+      <div class="tile"><b id="st-quality">—</b><span>30 天品質</span></div>
       <div class="tile"><b id="st-today">0</b><span>今日專注分</span></div>
-      <div class="tile"><b id="st-total">0</b><span>30 天總分鐘</span></div>
+
       <div class="tile"><b id="st-rate">—</b><span>每 25 分分心</span></div>
+    </div>
+    <h3>目標</h3>
+    <div class="settings">
+      <label>每日專注 <input id="set-daily" type="number" min="10" max="600" step="5"> 分</label>
+      <label>每週 <input id="set-week" type="number" min="1" max="7"> 天</label>
     </div>
     <h3>近 30 天專注分鐘</h3>
     <div class="chart" id="ch-minutes"></div>

@@ -3,8 +3,8 @@ const Timer = (() => {
   const $ = UI.$;
   const RUN_KEY = 'focus-dojo-run';
   const CIRC = 2 * Math.PI * 90;
-  let run = null;          // {task, plannedMin, startAt, endAt, distractions, away}
-  let tick = null, leftAt = 0, restTick = null;
+  let run = null;          // {task, outcome, ifthen, plannedMin, startAt, endAt, distractions, away, parked}
+  let tick = null, leftAt = 0, restTick = null, lastId = null, parkTimer = null;
   let plannedMin = 25;
 
   const getMin = UI.chips('#minute-chips', 'min', v => { plannedMin = +v; $('#minute-custom').value = ''; });
@@ -16,7 +16,12 @@ const Timer = (() => {
   const persist = () => { try { run ? localStorage.setItem(RUN_KEY, JSON.stringify(run)) : localStorage.removeItem(RUN_KEY); } catch {} };
   function show(which) {
     ['setup', 'running', 'done'].forEach(k => ($(`#focus-${k}`).hidden = k !== which));
-    if (which === 'setup') renderSuggest();
+    if (which === 'setup') { renderSuggest(); renderGoal(); }
+  }
+  function renderGoal() {
+    const done = Math.round(Store.todayMin()), goal = Store.get().settings.dailyMin;
+    $('#goal-line').innerHTML = done >= goal ? `今天 <b>${done}</b>／${goal} 分，目標達成 ✔` : `今天 <b>${done}</b>／${goal} 分，還差 ${goal - done} 分`;
+    $('#hdr-streak').textContent = `本週 ${Store.weekDone()}/${Store.get().settings.weekDays} 天`;
   }
   function renderSuggest() {
     const s = Store.suggest(plannedMin), el = $('#suggest');
@@ -42,6 +47,8 @@ const Timer = (() => {
   function begin(r) {
     run = r; persist();
     $('#run-task').textContent = run.task; $('#run-dist').textContent = run.distractions.length;
+    const il = $('#run-intent'); il.hidden = !(run.outcome || run.ifthen);
+    il.textContent = [run.outcome && `做完：${run.outcome}`, run.ifthen && `若分心：${run.ifthen}`].filter(Boolean).join(' · ');
     $('#btn-finish').textContent = '提早結束';
     show('running'); render(); clearInterval(tick); tick = setInterval(render, 500);
   }
@@ -49,7 +56,8 @@ const Timer = (() => {
     const task = $('#task-input').value.trim() || '未命名任務';
     plannedMin = +(getMin() || plannedMin);
     const now = Date.now();
-    begin({ task, plannedMin, startAt: now, endAt: now + plannedMin * 60000, distractions: [], away: [] });
+    const outcome = $('#outcome-input').value.trim(), ifthen = $('#ifthen-input').value.trim();
+    begin({ task, outcome, ifthen, plannedMin, startAt: now, endAt: now + plannedMin * 60000, distractions: [], away: [], parked: [] });
     UI.beep(520, .1);
   }
   function distract(reason) {
@@ -57,18 +65,29 @@ const Timer = (() => {
     run.distractions.push({ t: Math.round((Date.now() - run.startAt) / 1000), reason });
     $('#run-dist').textContent = run.distractions.length; persist();
     UI.vibrate(30);
+    // 停車場：記下念頭，結束再處理；8 秒沒寫自動收起
+    $('#park').hidden = false; $('#park-input').value = '';
+    clearTimeout(parkTimer); parkTimer = setTimeout(() => ($('#park').hidden = true), 8000);
   }
-  function stop() { clearInterval(tick); tick = null; document.title = '專注道場'; $('#away-ask').hidden = true; }
+  function park() {
+    const v = $('#park-input').value.trim();
+    if (v && run) { (run.parked ||= []).push(v); persist(); UI.toast('已停車，結束再處理'); }
+    $('#park').hidden = true; clearTimeout(parkTimer);
+  }
+  function stop() { clearInterval(tick); tick = null; document.title = '專注道場'; $('#away-ask').hidden = true; $('#park').hidden = true; }
   function finish(completed) {
     if (!run) return;
     stop();
     const actual = Math.min(run.plannedMin * 60, Math.round((Date.now() - run.startAt) / 1000));
-    const s = { date: Store.today(), start: run.startAt, task: run.task, planned: run.plannedMin * 60, actual, completed, distractions: run.distractions, away: run.away };
-    Store.addSession(s);
+    const s = { date: Store.today(), start: run.startAt, task: run.task, outcome: run.outcome, ifthen: run.ifthen, planned: run.plannedMin * 60, actual, completed, distractions: run.distractions, away: run.away, parked: run.parked || [] };
+    lastId = Store.addSession(s);
+    UI.$$('#stars button').forEach(b => b.classList.remove('on')); $('#review-note').value = '';
+    const pk = s.parked; $('#parked').hidden = !pk.length;
+    $('#parked-list').innerHTML = pk.map(x => `<li>${x.replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</li>`).join('');
     const mins = Math.round(actual / 60);
     $('#done-title').textContent = completed ? '完成 ✔' : '提早結束';
     $('#done-summary').textContent = `${run.task} · 專注 ${mins} 分鐘 · 分心 ${run.distractions.length} 次`;
-    $('#done-note').textContent = Store.counts(s) ? `今天已累積連續 ${Store.streak()} 天` : '做滿 5 分鐘或做完才算進連續天數';
+    $('#done-note').textContent = Store.counts(s) ? `本週 ${Store.weekDone()} 天 · 今天 ${Math.round(Store.todayMin())}／${Store.get().settings.dailyMin} 分` : '做滿 5 分鐘或做完才算進每週天數';
     run = null; persist();
     show('done');
     UI.beep(784, .2, completed ? 3 : 1); UI.vibrate([80, 60, 80]);
@@ -104,6 +123,20 @@ const Timer = (() => {
     const n = Store.get().sessions.filter(s => s.date === Store.today() && Store.counts(s)).length;
     rest(n > 0 && n % 4 === 0 ? 15 : 5);
   });
+  $('#park-save').addEventListener('click', park);
+  $('#park-input').addEventListener('keydown', e => e.key === 'Enter' && park());
+  $('#stars').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b || !lastId) return;
+    UI.$$('#stars button').forEach(x => x.classList.toggle('on', x === b));
+    Store.updateSession(lastId, { quality: +b.dataset.q });
+  });
+  $('#review-note').addEventListener('change', e => lastId && Store.updateSession(lastId, { note: e.target.value.trim() }));
+  $('#focus-done .next-row').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    clearInterval(restTick); $('#rest-box').hidden = true; $('#btn-rest').hidden = false; show('setup');
+    document.querySelector(`.tabs button[data-view="${b.dataset.go}"]`).click();
+  });
+  document.addEventListener('store:change', () => { if ($('#focus-setup').hidden === false) renderGoal(); });
   $('#focus-running .reasons').addEventListener('click', e => {
     const b = e.target.closest('button'); b && distract(b.dataset.reason);
   });
@@ -130,7 +163,7 @@ const Timer = (() => {
   (() => {
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(RUN_KEY) || 'null'); } catch {}
-    if (!saved) { renderSuggest(); return; }
+    if (!saved) { renderSuggest(); renderGoal(); return; }
     if (saved.endAt <= Date.now()) { run = saved; finish(true); UI.toast('上回計時已在背景完成'); }
     else { begin(saved); UI.toast('接續上回計時'); }
   })();
