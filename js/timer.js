@@ -20,8 +20,40 @@ const Timer = (() => {
   function show(which) {
     ['setup', 'running', 'done'].forEach(k => ($(`#focus-${k}`).hidden = k !== which));
     $('.belt-wrap').hidden = which === 'running';
-    if (which === 'setup') { renderSuggest(); renderGoal(); renderLastNote(); $('.intent').open = Store.get().sessions.filter(Store.counts).length < 5; }
+    if (which === 'setup') { renderSuggest(); renderGoal(); renderLastNote(); renderSubjects(); renderNextBlock(); $('.intent').open = Store.get().sessions.filter(Store.counts).length < 5; }
   }
+  // 科目 chips（道場頁設定）
+  let subject = '';
+  function renderSubjects() {
+    const list = Store.get().settings.subjects || [], box = $('#subject-chips');
+    box.hidden = !list.length; if (!list.includes(subject)) subject = '';
+    box.innerHTML = list.map(s => `<button data-s="${s.replace(/"/g, '&quot;')}" class="${s === subject ? 'on' : ''}">${s.replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</button>`).join('');
+  }
+  $('#subject-chips').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; subject = subject === b.dataset.s ? '' : b.dataset.s; renderSubjects(); });
+  // 每日排程：顯示下一段，±15 分內可一鍵採用
+  function renderNextBlock() {
+    const blocks = [...(Store.get().settings.blocks || [])].sort((a, b) => a.time.localeCompare(b.time)), el = $('#next-block');
+    if (!blocks.length) { el.hidden = true; return; }
+    const now = new Date(), cur = now.getHours() * 60 + now.getMinutes();
+    const mins = b => { const [h, m] = b.time.split(':').map(Number); return h * 60 + m; };
+    const due = blocks.find(b => Math.abs(mins(b) - cur) <= 15), next = blocks.find(b => mins(b) > cur + 15);
+    el.hidden = false;
+    if (due) el.innerHTML = `⏰ 現在是排程時段 <b>${due.time}</b> · ${due.min} 分 <button class="link" data-min="${due.min}">照排程開始</button>`;
+    else if (next) el.innerHTML = `下一段排程：<b>${next.time}</b> · ${next.min} 分`;
+    else el.innerHTML = `今天的排程都過了，明天 <b>${blocks[0].time}</b> 見`;
+  }
+  $('#next-block').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    plannedMin = +b.dataset.min; $('#minute-custom').value = plannedMin; $('#minute-custom').classList.add('on');
+    UI.$$('#minute-chips button').forEach(x => x.classList.toggle('on', +x.dataset.min === plannedMin));
+    $('#task-input').focus();
+  });
+  setInterval(() => { if (!$('#focus-setup').hidden) renderNextBlock(); }, 60000);
+  document.addEventListener('store:change', () => { if (!$('#focus-setup').hidden) { renderSubjects(); renderNextBlock(); } });
+  // 環境音
+  const soundSel = UI.chips('#sound-pick', 'sound', v => { Store.setSetting('sound', v); run && Sound.start(v, Store.get().settings.soundVol); });
+  $('#sound-vol').addEventListener('input', e => { Store.setSetting('soundVol', +e.target.value); Sound.setVol(+e.target.value); });
+  function syncSoundUI() { const st = Store.get().settings; UI.$$('#sound-pick button').forEach(b => b.classList.toggle('on', b.dataset.sound === (st.sound || 'off'))); $('#sound-vol').value = st.soundVol; }
   function renderGoal() {
     const done = Math.round(Store.todayMin()), goal = Store.get().settings.dailyMin;
     $('#goal-line').innerHTML = done >= goal ? `今天 <b>${done}</b>／${goal} 分，目標達成 ✔` : `今天 <b>${done}</b>／${goal} 分，還差 ${goal - done} 分`;
@@ -63,13 +95,14 @@ const Timer = (() => {
     $('#end-confirm').hidden = true; $('#end-row').hidden = false; $('#park-input').value = '';
     $('#ring-fg').classList.remove('done');
     show('running'); render(); clearInterval(tick); tick = setInterval(render, 500); lockScreen();
+    syncSoundUI(); const st = Store.get().settings; if (st.sound && st.sound !== 'off') Sound.start(st.sound, st.soundVol);
   }
   function start() {
     const task = $('#task-input').value.trim() || '未命名任務';
     plannedMin = +(getMin() || plannedMin);
     const now = Date.now();
     const outcome = $('#outcome-input').value.trim(), ifthen = $('#ifthen-input').value.trim();
-    begin({ task, outcome, ifthen, plannedMin, startAt: now, endAt: now + plannedMin * 60000, distractions: [], away: [], parked: [], lastSeen: now });
+    begin({ task, subject, outcome, ifthen, plannedMin, startAt: now, endAt: now + plannedMin * 60000, distractions: [], away: [], parked: [], lastSeen: now });
     UI.beep(520, .1);
   }
   function distract(reason) {
@@ -85,7 +118,7 @@ const Timer = (() => {
     if (v && run) { (run.parked ||= []).push(v); persist(); UI.toast('已停車，結束再處理'); }
     $('#park-input').value = '';
   }
-  function stop() { clearInterval(tick); tick = null; document.title = '專注道場'; $('#away-ask').hidden = true; try { wake && wake.release(); } catch {} wake = null; }
+  function stop() { clearInterval(tick); tick = null; document.title = '專注道場'; $('#away-ask').hidden = true; try { wake && wake.release(); } catch {} wake = null; Sound.stop(); }
   // 實際專注秒數：最後一次看到畫面為止，再扣掉 ≥10 秒的離開時段
   function actualSec(r, endTs) {
     const seen = Math.min(endTs, r.lastSeen || endTs);
@@ -97,7 +130,7 @@ const Timer = (() => {
     stop();
     const actual = actualSec(run, bg ? run.endAt : Date.now());
     completed = completed && actual >= run.plannedMin * 60 - 5;
-    const s = { date: Store.today(), start: run.startAt, task: run.task, outcome: run.outcome, ifthen: run.ifthen, planned: run.plannedMin * 60, actual, completed, distractions: run.distractions, away: run.away, parked: run.parked || [] };
+    const s = { date: Store.today(), start: run.startAt, task: run.task, subject: run.subject || '', outcome: run.outcome, ifthen: run.ifthen, planned: run.plannedMin * 60, actual, completed, distractions: run.distractions, away: run.away, parked: run.parked || [] };
     lastId = Store.addSession(s); s.id = lastId; lastSession = s;
     const counted = Store.counts(s);
     $('#done-challenge').textContent = Game.resolveChallenge(s);
@@ -123,7 +156,7 @@ const Timer = (() => {
     if (!run) return;
     stop();
     const actual = actualSec(run, Date.now());
-    Store.addSession({ date: Store.today(), start: run.startAt, task: run.task, planned: run.plannedMin * 60, actual, completed: false, aborted: true, distractions: run.distractions, away: run.away });
+    Store.addSession({ date: Store.today(), start: run.startAt, task: run.task, subject: run.subject || '', planned: run.plannedMin * 60, actual, completed: false, aborted: true, distractions: run.distractions, away: run.away });
     run = null; persist(); show('setup'); UI.toast('這回不算，下次再來');
   }
 
@@ -199,7 +232,7 @@ const Timer = (() => {
   (() => {
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(RUN_KEY) || 'null'); } catch {}
-    if (!saved) { renderSuggest(); renderGoal(); renderLastNote(); return; }
+    if (!saved) { show('setup'); return; }
     if (saved.endAt <= Date.now()) { run = saved; finish(true, true); UI.toast('上回計時已結束，只算有看著畫面的時間'); }
     else { begin(saved); UI.toast('接續上回計時'); }
   })();

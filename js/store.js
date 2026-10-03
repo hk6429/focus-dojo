@@ -1,7 +1,7 @@
 // 單一 localStorage key；所有資料走這裡
 const Store = (() => {
   const KEY = 'focus-dojo-v1';
-  const blank = () => ({ version: 1, sessions: [], breaths: [], games: [], badges: {}, trials: {}, settings: { dailyMin: 50, weekDays: 5, name: '', mission: '', theme: 'white', dark: 'auto', customReasons: [], onboarded: false } });
+  const blank = () => ({ version: 1, sessions: [], breaths: [], games: [], badges: {}, trials: {}, settings: { dailyMin: 50, weekDays: 5, name: '', mission: '', theme: 'white', dark: 'auto', customReasons: [], subjects: [], blocks: [], sound: 'off', soundVol: 0.4, onboarded: false } });
   let data = load();
 
   function load() {
@@ -56,8 +56,8 @@ const Store = (() => {
     exportJSON() { return JSON.stringify(data, null, 2); },
     // 每坐一列，可直接進試算表
     exportCSV() {
-      const head = ['date', 'start', 'task', 'planned_min', 'actual_min', 'completed', 'counted', 'aborted', 'distractions', 'away_sec', 'quality', 'note', 'experiment'];
-      const rows = data.sessions.map(s => [s.date, new Date(s.start).toISOString(), s.task, Math.round(s.planned / 60), +(s.actual / 60).toFixed(1), s.completed ? 1 : 0, counts(s) ? 1 : 0, s.aborted ? 1 : 0, s.distractions.length, (s.away || []).reduce((a, x) => a + x.sec, 0), s.quality || '', s.note || '', s.experiment || '']);
+      const head = ['date', 'start', 'subject', 'task', 'planned_min', 'actual_min', 'completed', 'counted', 'aborted', 'distractions', 'away_sec', 'quality', 'note', 'experiment'];
+      const rows = data.sessions.map(s => [s.date, new Date(s.start).toISOString(), s.subject || '', s.task, Math.round(s.planned / 60), +(s.actual / 60).toFixed(1), s.completed ? 1 : 0, counts(s) ? 1 : 0, s.aborted ? 1 : 0, s.distractions.length, (s.away || []).reduce((a, x) => a + x.sec, 0), s.quality || '', s.note || '', s.experiment || '']);
       return '﻿' + [head, ...rows].map(r => r.map(csvCell).join(',')).join('\n');
     },
     importJSON(text) {

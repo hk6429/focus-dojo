@@ -152,26 +152,27 @@ const Game = (() => {
 
   // ---- 成果卡：先預覽，再分享；可隱藏任務名 ----
   let shareS = null, shareBlob = null;
-  function drawCard(s, hideTask) {
-    const c = document.createElement('canvas'); c.width = c.height = 1080; const x = c.getContext('2d');
+  function drawCard(s, hideTask, story) {
+    const c = document.createElement('canvas'); c.width = 1080; c.height = story ? 1920 : 1080; const x = c.getContext('2d');
     const b = belt(), st = Store.get().settings;
     const bc = BELTS.find(t => t.id === st.theme) || BELTS[0];
-    x.fillStyle = '#f6f4ef'; x.fillRect(0, 0, 1080, 1080);
-    x.fillStyle = bc.accent; x.fillRect(0, 0, 1080, 220);
-    x.fillStyle = '#fff'; x.font = 'bold 72px -apple-system, PingFang TC, Noto Sans TC, sans-serif'; x.fillText('專注道場', 80, 140);
-    x.font = '40px -apple-system, PingFang TC, sans-serif'; x.fillText(st.name ? `${st.name} · ${b.name}` : b.name, 640, 140);
-    x.fillStyle = '#1c1c1c'; x.font = 'bold 64px -apple-system, PingFang TC, sans-serif'; x.fillText(hideTask ? '一段專注' : s.task.slice(0, 14), 80, 360);
-    x.font = 'bold 200px -apple-system, sans-serif'; x.fillStyle = bc.accent; const numStr = String(Math.round(s.actual / 60)); x.fillText(numStr, 80, 620); const nw = x.measureText(numStr).width;
-    x.font = '56px -apple-system, PingFang TC, sans-serif'; x.fillStyle = '#6b6b6b'; x.fillText('分鐘專注', 80 + nw + 30, 620);
-    x.fillText(`分心 ${s.distractions.length} 次${s.quality ? ' · 品質 ' + '★'.repeat(s.quality) : ''}`, 80, 720);
+    const top = story ? 420 : 0, F = '-apple-system, PingFang TC, Noto Sans TC, sans-serif';
+    x.fillStyle = '#f6f4ef'; x.fillRect(0, 0, 1080, c.height);
+    x.fillStyle = bc.accent; x.fillRect(0, top, 1080, 220);
+    x.fillStyle = '#fff'; x.font = 'bold 72px ' + F; x.fillText('專注道場', 80, top + 140);
+    x.font = '40px ' + F; x.fillText(st.name ? `${st.name} · ${b.name}` : b.name, 640, top + 140);
+    x.fillStyle = '#1c1c1c'; x.font = 'bold 64px ' + F; x.fillText(hideTask ? '一段專注' : (s.subject ? s.subject + ' · ' : '') + s.task.slice(0, 12), 80, top + 360);
+    x.font = 'bold 200px ' + F; x.fillStyle = bc.accent; const numStr = String(Math.round(s.actual / 60)); x.fillText(numStr, 80, top + 620); const nw = x.measureText(numStr).width;
+    x.font = '56px ' + F; x.fillStyle = '#6b6b6b'; x.fillText('分鐘專注', 80 + nw + 30, top + 620);
+    x.fillText(`分心 ${s.distractions.length} 次${s.quality ? ' · 品質 ' + '★'.repeat(s.quality) : ''}`, 80, top + 720);
     const got = Object.keys(Store.get().badges).length;
-    x.fillText(`本週 ${Store.weekDone()} 天 · 徽章 ${got} 枚`, 80, 800);
-    x.font = '36px -apple-system, PingFang TC, sans-serif'; x.fillStyle = '#9a9a96';
-    x.fillText(`${s.date} · 累積 ${Math.round(b.total)} 分 · focus-dojo.pages.dev`, 80, 1000);
+    x.fillText(`本週 ${Store.weekDone()} 天 · 徽章 ${got} 枚`, 80, top + 800);
+    x.font = '36px ' + F; x.fillStyle = '#9a9a96';
+    x.fillText(`${s.date} · 累積 ${Math.round(b.total)} 分 · focus-dojo.pages.dev`, 80, top + 1000);
     return c;
   }
   async function renderCard() {
-    const c = drawCard(shareS, $('#share-hide').checked);
+    const c = drawCard(shareS, $('#share-hide').checked, ($('#card-format button.on') || {}).dataset?.fmt === 'story');
     $('#card-img').src = c.toDataURL('image/png');
     shareBlob = await new Promise(r => c.toBlob(r, 'image/png'));
   }
@@ -249,7 +250,7 @@ const Game = (() => {
     const st = Store.get().settings;
     $('#dojo-name').value = st.name; $('#dojo-mission').value = st.mission;
     $('#mission-line').textContent = st.mission ? `「${st.mission}」` : '';
-    renderBelt(); renderThemes(); renderBadges(); renderInsights(); renderMoves(); renderReasons(); renderTrial();
+    renderBelt(); renderThemes(); renderBadges(); renderInsights(); renderMoves(); renderReasons(); renderTrial(); renderSubjectsBlocks();
   }
   function onboarding() {
     if (Store.get().settings.onboarded) return;
@@ -285,6 +286,37 @@ const Game = (() => {
   $('#exp-pick').addEventListener('change', e => { $('#exp-custom').hidden = e.target.value !== '__custom'; });
   $('#exp-ask').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; Store.updateSession($('#exp-ask').dataset.id, { expResult: b.dataset.yes === '1' }); $('#exp-ask').hidden = true; check(); });
   $('#share-hide').addEventListener('change', renderCard);
+  UI.chips('#card-format', 'fmt', renderCard);
+  // ---- 科目／排程編輯 ----
+  function renderSubjectsBlocks() {
+    const st = Store.get().settings;
+    $('#subject-list').innerHTML = (st.subjects || []).map((r, i) => `<span class="chip">${esc(r)}<button data-del="${i}">×</button></span>`).join('') || '<span class="hint">還沒有科目</span>';
+    const blocks = [...(st.blocks || [])].sort((a, b) => a.time.localeCompare(b.time));
+    $('#block-list').innerHTML = blocks.length ? blocks.map(b => `<div class="kv"><span>⏰ ${b.time} · ${b.min} 分</span><em><button class="link" data-del-block="${b.time}">移除</button></em></div>`).join('') : '<p class="empty">還沒有排程</p>';
+    $('#btn-notify').hidden = !('Notification' in window) || Notification.permission === 'granted' || !blocks.length;
+  }
+  $('#subject-add').addEventListener('click', () => {
+    const v = $('#subject-input').value.trim().slice(0, 6); if (!v) return;
+    const c = Store.get().settings.subjects || []; if (c.length >= 8 || c.includes(v)) return UI.toast('最多 8 個，且不可重複');
+    Store.setSetting('subjects', [...c, v]); $('#subject-input').value = ''; renderSubjectsBlocks();
+  });
+  $('#subject-list').addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (!b) return; const c = [...Store.get().settings.subjects]; c.splice(+b.dataset.del, 1); Store.setSetting('subjects', c); renderSubjectsBlocks(); });
+  $('#block-add').addEventListener('click', () => {
+    const time = $('#block-time').value, min = Math.min(180, Math.max(5, +$('#block-min').value || 25));
+    if (!time) return UI.toast('先選時間');
+    const c = (Store.get().settings.blocks || []).filter(b => b.time !== time); if (c.length >= 6) return UI.toast('最多 6 段');
+    Store.setSetting('blocks', [...c, { time, min }]); renderSubjectsBlocks();
+  });
+  $('#block-list').addEventListener('click', e => { const b = e.target.closest('[data-del-block]'); if (!b) return; Store.setSetting('blocks', Store.get().settings.blocks.filter(x => x.time !== b.dataset.delBlock)); renderSubjectsBlocks(); });
+  $('#btn-notify').addEventListener('click', async () => { try { const p = await Notification.requestPermission(); UI.toast(p === 'granted' ? '到點會通知你（頁面要開著）' : '沒有開啟通知'); } catch {} renderSubjectsBlocks(); });
+  // 到點通知：頁面開著時每 30 秒檢查一次，同一段一天只提醒一次
+  setInterval(() => {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    const now = new Date(), hm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const b = (Store.get().settings.blocks || []).find(x => x.time === hm); if (!b) return;
+    const k = 'fd-notified-' + Store.today() + '-' + hm; if (localStorage.getItem(k)) return; localStorage.setItem(k, '1');
+    try { new Notification('專注道場', { body: `排程時間到：${b.min} 分鐘一坐`, tag: k }); } catch {}
+  }, 30000);
   $('#share-send').addEventListener('click', sendCard);
   $('#share-copy').addEventListener('click', copySummary);
 

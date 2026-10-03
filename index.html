@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="stylesheet" href="css/style.css?v=6">
   <script src="https://xuexi-hangzhan-api.hk6429.workers.dev/naicheng-sso.js" defer></script>
 </head>
 <body>
@@ -30,7 +30,9 @@
         <span>這段時間要做什麼？</span>
         <input id="task-input" type="text" maxlength="40" placeholder="例：改作文 / 讀一章書" autocomplete="off">
       </label>
+      <div class="chips subj" id="subject-chips"></div>
       <p class="last-note" id="last-note" hidden></p>
+      <p class="next-block" id="next-block" hidden></p>
       <details class="intent">
         <summary>先想一下（選填，30 秒）</summary>
         <label class="field"><span>做完會是什麼樣子？</span><input id="outcome-input" type="text" maxlength="60" placeholder="例：三篇改完、評語寫好"></label>
@@ -77,6 +79,10 @@
         <input id="park-input" type="text" maxlength="60" placeholder="想到什麼？先記一句，結束再處理">
         <button id="park-save">存</button>
       </div>
+      <div class="sound-row">
+        <div class="chips" id="sound-pick"><button data-sound="off">🔇 安靜</button><button data-sound="brown">🟤 棕噪音</button><button data-sound="white">⚪ 白噪音</button><button data-sound="rain">🌧 雨聲</button></div>
+        <input id="sound-vol" type="range" min="0" max="1" step="0.05" aria-label="音量">
+      </div>
       <div class="row end-row" id="end-row">
         <button class="secondary" id="btn-finish">提早結束</button>
         <button class="link-btn" id="btn-abort">這回不算</button>
@@ -108,6 +114,7 @@
       <button class="ghost wide" id="btn-share">📤 成果卡／邀人同坐</button>
       <div class="share-box" id="share-box" hidden>
         <img id="card-img" alt="成果卡預覽">
+        <div class="chips" id="card-format"><button data-fmt="square" class="on">1:1 貼文</button><button data-fmt="story">9:16 限動</button></div>
         <label class="check"><input type="checkbox" id="share-hide"> 卡片上不顯示任務名稱</label>
         <p class="hint small">邀約連結只含你的稱呼與分鐘數，不含任務內容。</p>
         <div class="row"><button class="ghost" id="share-copy">複製一行摘要</button><button class="primary" id="share-send">分享／下載</button></div>
@@ -194,6 +201,15 @@
     <div id="insights"></div>
     <h3>我的招式</h3>
     <div id="moves"></div>
+    <h3>科目／類別（最多 8 個）</h3>
+    <p class="hint">設定後，開始專注前可一鍵選科目，紀錄頁會比較各科的分心率與品質。</p>
+    <div class="park"><input id="subject-input" type="text" maxlength="6" placeholder="例：數學、英文、寫作"><button id="subject-add">加入</button></div>
+    <div class="chips" id="subject-list"></div>
+    <h3>每日排程（最多 6 段）</h3>
+    <p class="hint">固定時段、固定長度最容易養成。到點會在首頁提示，開著頁面也會跳通知。</p>
+    <div class="block-add"><input id="block-time" type="time" aria-label="時間"><input id="block-min" type="number" min="5" max="180" value="25" aria-label="分鐘"><span>分</span><button id="block-add">加入</button></div>
+    <div id="block-list"></div>
+    <button class="ghost wide" id="btn-notify">🔔 開啟到點通知</button>
     <h3>自訂分心原因（最多 4 個）</h3>
     <div class="park"><input id="custom-input" type="text" maxlength="6" placeholder="例：小孩、LINE、Slack"><button id="custom-add">加入</button></div>
     <div class="chips" id="custom-list"></div>
@@ -220,6 +236,8 @@
     <h3>分心原因</h3>
     <div class="bars" id="ch-reasons"></div>
     <p class="hint" id="away-note"></p>
+    <h3>各科目</h3>
+    <div id="ch-subjects"></div>
     <h3>狀態檢測</h3>
     <div class="bars" id="ch-games"></div>
     <h3>最近紀錄</h3>
@@ -268,14 +286,15 @@
   </div>
 </div>
 
-<script src="js/store.js?v=5"></script>
-<script src="js/ui.js?v=5"></script>
-<script src="js/quotes.js?v=5"></script>
-<script src="js/game.js?v=5"></script>
-<script src="js/timer.js?v=5"></script>
-<script src="js/breath.js?v=5"></script>
-<script src="js/games.js?v=5"></script>
-<script src="js/stats.js?v=5"></script>
-<script src="js/app.js?v=5"></script>
+<script src="js/store.js?v=6"></script>
+<script src="js/ui.js?v=6"></script>
+<script src="js/quotes.js?v=6"></script>
+<script src="js/game.js?v=6"></script>
+<script src="js/timer.js?v=6"></script>
+<script src="js/breath.js?v=6"></script>
+<script src="js/sound.js?v=6"></script>
+<script src="js/games.js?v=6"></script>
+<script src="js/stats.js?v=6"></script>
+<script src="js/app.js?v=6"></script>
 </body>
 </html>

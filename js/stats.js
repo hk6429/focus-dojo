@@ -71,6 +71,14 @@ const Stats = (() => {
     bars($('#ch-reasons'), rrows, v => v + ' 次');
     $('#away-note').textContent = awayCount ? `另有 ${awayCount} 次離開畫面，時間已扣除、未算分心` : '';
 
+    const bySub = {};
+    sessions.filter(s => Store.counts(s) && s.subject).forEach(s => { (bySub[s.subject] ||= []).push(s); });
+    const srows = Object.entries(bySub).sort((a, b) => b[1].length - a[1].length);
+    $('#ch-subjects').innerHTML = srows.length ? '<div class="kv head"><span>科目</span><em>坐數 · 分鐘 · 每小時分心 · 品質</em></div>' + srows.map(([k, v]) => {
+      const mins = v.reduce((a, s) => a + s.actual / 60, 0), d = v.reduce((a, s) => a + s.distractions.length, 0), q = v.filter(s => s.quality);
+      return `<div class="kv"><span>${esc(k)}</span><em>${v.length} · ${Math.round(mins)} · ${(d / (mins / 60)).toFixed(1)} · ${q.length ? (q.reduce((a, s) => a + s.quality, 0) / q.length).toFixed(1) + '★' : '—'}</em></div>`;
+    }).join('') : '<p class="empty">在道場頁設定科目後，開始前選科目就會在這裡比較</p>';
+
     const sch = games.filter(g => g.type === 'schulte'), str = games.filter(g => g.type === 'stroop' && g.interference != null);
     const avg = (arr, f) => arr.length ? arr.reduce((a, g) => a + f(g), 0) / arr.length : null;
     const rows = [];
@@ -80,7 +88,7 @@ const Stats = (() => {
 
     const log = [...sessions].sort((a, b) => b.start - a.start).slice(0, 15);
     const tag = s => s.aborted ? ' · 放棄' : !Store.counts(s) ? ' · 未滿 5 分' : s.completed ? '' : ' · 提早';
-    $('#log-list').innerHTML = log.length ? log.map(s => `<li><span>${esc(s.task)} · ${Math.round(s.actual / 60)} 分 · 分心 ${s.distractions.length}${tag(s)}${s.quality ? ' · ' + '★'.repeat(s.quality) : ''}</span><span>${s.date.slice(5)}</span></li>`).join('')
+    $('#log-list').innerHTML = log.length ? log.map(s => `<li><span>${s.subject ? esc(s.subject) + '｜' : ''}${esc(s.task)} ·${Math.round(s.actual / 60)} 分 · 分心 ${s.distractions.length}${tag(s)}${s.quality ? ' · ' + '★'.repeat(s.quality) : ''}</span><span>${s.date.slice(5)}</span></li>`).join('')
       : '<li class="empty">還沒有專注紀錄，去開始第一回吧</li>';
   }
 

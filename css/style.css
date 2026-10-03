@@ -193,3 +193,19 @@ h4{font-size:.95rem;margin:12px 0 4px}
 
 /* 學習航站登入鈕：避開底部分頁列 */
 button[aria-label="學習航站登入狀態"]{bottom:calc(76px + env(safe-area-inset-bottom))!important}
+
+/* 第五波：科目、排程、環境音、9:16 卡 */
+.subj{margin:-2px 0 8px}
+.subj button{font-size:.9rem;padding:6px 12px}
+.next-block{background:var(--card);border-left:4px solid var(--accent-2);border-radius:10px;padding:8px 12px;margin:6px 0;font-size:.9rem;color:var(--muted)}
+.next-block b{color:var(--accent)}
+.next-block .link{background:transparent;color:var(--accent);font-weight:700;padding:0 6px}
+.sound-row{margin-top:14px;display:flex;flex-direction:column;gap:4px;align-items:center}
+.sound-row .chips{margin:0;justify-content:center}
+.sound-row .chips button{font-size:.85rem;padding:6px 10px}
+.sound-row input[type=range]{width:60%;accent-color:var(--accent)}
+.block-add{display:flex;gap:8px;align-items:center}
+.block-add input{font:inherit;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg)}
+.block-add input[type=time]{flex:1}.block-add input[type=number]{width:72px}
+.block-list .kv em .link,.kv .link{background:transparent;color:var(--warn);padding:0 4px;font-size:.85rem}
+#card-format{margin:8px 0 0;justify-content:center}
