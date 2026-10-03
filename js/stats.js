@@ -99,7 +99,7 @@ const Stats = (() => {
   });
   $('#file-import').addEventListener('change', async e => {
     const f = e.target.files[0]; if (!f) return;
-    try { Store.importJSON(await f.text()); UI.toast('匯入完成'); } catch (err) { UI.toast('匯入失敗：' + err.message); }
+    try { Store.importJSON(await f.text()); Game.check(); UI.toast('匯入完成'); } catch (err) { UI.toast('匯入失敗：' + err.message); }
     e.target.value = '';
   });
   $('#btn-clear').addEventListener('click', () => { $('#clear-confirm').hidden = false; $('#btn-clear').hidden = true; });

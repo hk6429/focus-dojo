@@ -11,18 +11,25 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
 <header class="top">
   <h1>專注道場</h1>
   <div class="streak" id="hdr-streak" title="本週完成天數">本週 0/5 天</div>
 </header>
+<div class="belt-wrap"><div class="belt-line" id="belt-line"></div><div class="belt-track"><i id="belt-bar"></i></div></div>
+<header hidden>
+</header>
 
 <main>
   <!-- 專注計時 -->
   <section id="view-focus" class="view active">
     <div id="focus-setup">
+      <p class="quote" id="quote"></p>
+      <p class="mission" id="mission-line"></p>
+      <div class="challenge" id="challenge" hidden><span id="challenge-text"></span><div class="row"><button class="ghost" id="challenge-skip">略過</button><button class="primary" id="challenge-accept">接受挑戰</button></div></div>
+      <div class="trial" id="trial-card"></div>
       <label class="field">
         <span>這段時間要做什麼？</span>
         <input id="task-input" type="text" maxlength="40" placeholder="例：改作文 / 讀一章書" autocomplete="off">
@@ -82,7 +89,12 @@
         <div class="stars" id="stars"><button data-q="1">1</button><button data-q="2">2</button><button data-q="3">3</button><button data-q="4">4</button><button data-q="5">5</button></div>
         <input id="review-note" type="text" maxlength="80" placeholder="下回想調整什麼？（選填）">
       </div>
+      <p class="hint center" id="done-challenge"></p>
       <div class="parked" id="parked" hidden><p>剛才停車的念頭，現在去處理：</p><ul id="parked-list"></ul></div>
+      <div class="exp-ask" id="exp-ask" hidden><span></span><button data-yes="1">有效</button><button data-yes="0">沒用</button></div>
+      <div class="exp"><select id="exp-pick"></select><input id="exp-custom" type="text" maxlength="40" placeholder="寫下你的招式" hidden></div>
+      <p class="hint center" id="tip-line"></p>
+      <button class="ghost wide" id="btn-share">📤 分享成果卡／發出挑戰</button>
       <div class="rest-box" id="rest-box" hidden><span>休息</span><b id="rest-clock">05:00</b></div>
       <div class="row">
         <button class="secondary" id="btn-rest">休息一下</button>
@@ -147,6 +159,25 @@
     </div>
   </section>
 
+  <!-- 道場 -->
+  <section id="view-dojo" class="view">
+    <h2>我的道場</h2>
+    <label class="field"><span>道號（成果卡與挑戰會顯示）</span><input id="dojo-name" type="text" maxlength="12" placeholder="例：大乃"></label>
+    <label class="field"><span>我為什麼練專注？</span><input id="dojo-mission" type="text" maxlength="40" placeholder="例：把時間還給家人和寫作"></label>
+    <h3>段位與道場配色</h3>
+    <div class="theme-pick" id="theme-pick"></div>
+    <p class="hint">段位依累積計入分鐘：黃帶 100、綠帶 500、藍帶 1500、黑帶 4000。14 天不坐降一級，回來坐就恢復。</p>
+    <h3>徽章 <small id="badge-count"></small></h3>
+    <div class="badge-grid" id="badge-grid"></div>
+    <h3>洞察</h3>
+    <div id="insights"></div>
+    <h3>我的招式</h3>
+    <div id="moves"></div>
+    <h3>自訂分心原因（最多 4 個）</h3>
+    <div class="park"><input id="custom-input" type="text" maxlength="6" placeholder="例：小孩、LINE"><button id="custom-add">加入</button></div>
+    <div class="chips" id="custom-list"></div>
+  </section>
+
   <!-- 紀錄 -->
   <section id="view-stats" class="view">
     <h2>紀錄</h2>
@@ -188,18 +219,34 @@
 <nav class="tabs">
   <button data-view="focus" class="on">⏱ 專注</button>
   <button data-view="breath">🌬 呼吸</button>
-  <button data-view="games">🎯 遊戲</button>
+  <button data-view="games">🎯 檢測</button>
+  <button data-view="dojo">🥋 道場</button>
   <button data-view="stats">📈 紀錄</button>
 </nav>
 
 <div class="toast" id="toast" hidden></div>
+<div class="modal" id="onboard" hidden>
+  <div class="modal-box">
+    <h2>入門</h2>
+    <ul>
+      <li>每一坐：設任務、按開始、分心就記一筆，做完給自己評分。</li>
+      <li>做滿 5 分鐘才算，累積分鐘升段位；14 天不坐會降一級。</li>
+      <li>這裡沒有排行榜，只有昨天的你。</li>
+    </ul>
+    <label class="field"><span>道號</span><input id="ob-name" type="text" maxlength="12" placeholder="例：大乃"></label>
+    <label class="field"><span>我為什麼練專注？</span><input id="ob-mission" type="text" maxlength="40" placeholder="一句話就好"></label>
+    <button class="primary big" id="onboard-go">開始修行</button>
+  </div>
+</div>
 
-<script src="js/store.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/timer.js"></script>
-<script src="js/breath.js"></script>
-<script src="js/games.js"></script>
-<script src="js/stats.js"></script>
-<script src="js/app.js"></script>
+<script src="js/store.js?v=4"></script>
+<script src="js/ui.js?v=4"></script>
+<script src="js/quotes.js?v=4"></script>
+<script src="js/game.js?v=4"></script>
+<script src="js/timer.js?v=4"></script>
+<script src="js/breath.js?v=4"></script>
+<script src="js/games.js?v=4"></script>
+<script src="js/stats.js?v=4"></script>
+<script src="js/app.js?v=4"></script>
 </body>
 </html>

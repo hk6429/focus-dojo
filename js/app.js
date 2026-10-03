@@ -5,6 +5,7 @@
     UI.$$('.view').forEach(v => v.classList.toggle('active', v.id === `view-${view}`));
     UI.$$('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.view === view));
     if (view === 'stats') Stats.render();
+    if (view === 'dojo') Game.renderDojo();
     try { localStorage.setItem('focus-dojo-tab', view); } catch {}
   }
   tabs.addEventListener('click', e => {

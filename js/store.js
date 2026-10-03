@@ -1,7 +1,7 @@
 // 單一 localStorage key；所有資料走這裡
 const Store = (() => {
   const KEY = 'focus-dojo-v1';
-  const blank = () => ({ version: 1, sessions: [], breaths: [], games: [], settings: { dailyMin: 50, weekDays: 5 } });
+  const blank = () => ({ version: 1, sessions: [], breaths: [], games: [], badges: {}, trials: {}, settings: { dailyMin: 50, weekDays: 5, name: '', mission: '', theme: 'white', customReasons: [], onboarded: false } });
   let data = load();
 
   function load() {
@@ -31,6 +31,12 @@ const Store = (() => {
     addSession(s) { const o = { id: uid(), ...s }; data.sessions.push(o); save(); return o.id; },
     updateSession(id, patch) { const s = data.sessions.find(x => x.id === id); if (s) { Object.assign(s, patch); save(); } },
     setSetting(k, v) { data.settings[k] = v; save(); },
+    earn(id) { if (data.badges[id]) return false; data.badges[id] = today(); save(); return true; },
+    trialDone(date) { if (data.trials[date]) return false; data.trials[date] = true; save(); return true; },
+    // 累積計入分鐘（段位依據）
+    totalMin() { return data.sessions.filter(counts).reduce((a, s) => a + s.actual / 60, 0); },
+    lastCountedDate() { const d = data.sessions.filter(counts).map(s => s.date).sort(); return d[d.length - 1] || null; },
+    todayCtx() { const t = today(); return { sessions: data.sessions.filter(s => s.date === t && !s.aborted), breaths: data.breaths.filter(b => b.date === t), games: data.games.filter(g => g.date === t) }; },
     todayMin() { const t = today(); return data.sessions.filter(s => s.date === t && !s.aborted).reduce((a, s) => a + s.actual / 60, 0); },
     // 本週（週一起）有計入回合的天數
     weekDone() {

@@ -33,7 +33,7 @@ const Games = (() => {
         $('#sch-time').textContent = (ms / 1000).toFixed(1) + 's';
         $('#sch-next').textContent = '完成';
         const best = Store.get().games.filter(g => g.type === 'schulte').reduce((m, g) => Math.min(m, g.ms), Infinity);
-        Store.addGame({ date: Store.today(), type: 'schulte', ms, wrong });
+        Store.addGame({ date: Store.today(), type: 'schulte', ms, wrong }); Game.check();
         $('#sch-result').textContent = `${(ms / 1000).toFixed(1)} 秒，點錯 ${wrong} 次` + (ms < best ? ' · 最快一次' : '');
         UI.beep(784, .15, 2);
       } else $('#sch-next').textContent = `下一個：${next}`;
@@ -90,7 +90,7 @@ const Games = (() => {
       const cong = avg(valid.filter(r => r.cong)), incong = avg(valid.filter(r => !r.cong));
       const correct = results.filter(r => r.ok).length;
       const interference = cong != null && incong != null ? incong - cong : null;
-      Store.addGame({ date: Store.today(), type: 'stroop', correct, total: N, congMs: cong, incongMs: incong, interference });
+      Store.addGame({ date: Store.today(), type: 'stroop', correct, total: N, congMs: cong, incongMs: incong, interference }); Game.check();
       word.textContent = '—'; word.className = 'stroop-word';
       $('#str-result').innerHTML = `正確 ${correct}/${N}<br>一致 ${cong ?? '—'} ms · 不一致 ${incong ?? '—'} ms<br>干擾量 <b>${interference ?? '—'} ms</b><small>（越小代表抑制越穩）</small>`;
       $('#str-progress').textContent = '完成'; UI.beep(784, .15, 2);

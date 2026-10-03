@@ -4,7 +4,7 @@ const Timer = (() => {
   const RUN_KEY = 'focus-dojo-run';
   const CIRC = 2 * Math.PI * 90;
   let run = null;          // {task, outcome, ifthen, plannedMin, startAt, endAt, distractions, away, parked}
-  let tick = null, leftAt = 0, restTick = null, lastId = null, parkTimer = null;
+  let tick = null, leftAt = 0, restTick = null, lastId = null, parkTimer = null, lastSession = null;
   let plannedMin = 25;
 
   const getMin = UI.chips('#minute-chips', 'min', v => { plannedMin = +v; $('#minute-custom').value = ''; });
@@ -80,7 +80,11 @@ const Timer = (() => {
     stop();
     const actual = Math.min(run.plannedMin * 60, Math.round((Date.now() - run.startAt) / 1000));
     const s = { date: Store.today(), start: run.startAt, task: run.task, outcome: run.outcome, ifthen: run.ifthen, planned: run.plannedMin * 60, actual, completed, distractions: run.distractions, away: run.away, parked: run.parked || [] };
-    lastId = Store.addSession(s);
+    lastId = Store.addSession(s); s.id = lastId; lastSession = s;
+    $('#done-challenge').textContent = Game.resolveChallenge(s);
+    $('#tip-line').textContent = Game.tip();
+    Game.renderExperiment(lastId);
+    setTimeout(() => Game.check(), 50);
     UI.$$('#stars button').forEach(b => b.classList.remove('on')); $('#review-note').value = '';
     const pk = s.parked; $('#parked').hidden = !pk.length;
     $('#parked-list').innerHTML = pk.map(x => `<li>${x.replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]))}</li>`).join('');
@@ -128,8 +132,11 @@ const Timer = (() => {
   $('#stars').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b || !lastId) return;
     UI.$$('#stars button').forEach(x => x.classList.toggle('on', x === b));
-    Store.updateSession(lastId, { quality: +b.dataset.q });
+    Store.updateSession(lastId, { quality: +b.dataset.q }); Game.check();
   });
+  const saveExp = () => { const v = Game.experimentValue(); if (lastId && v) Store.updateSession(lastId, { experiment: v }); };
+  $('#exp-pick').addEventListener('change', saveExp); $('#exp-custom').addEventListener('change', saveExp);
+  $('#btn-share').addEventListener('click', () => lastSession && Game.shareCard(Store.get().sessions.find(x => x.id === lastId) || lastSession));
   $('#review-note').addEventListener('change', e => lastId && Store.updateSession(lastId, { note: e.target.value.trim() }));
   $('#focus-done .next-row').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;

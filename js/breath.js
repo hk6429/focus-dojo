@@ -40,7 +40,7 @@ const Breath = (() => {
     circle.style.transitionDuration = '1s'; circle.style.transform = 'scale(1)';
     phaseEl.textContent = done ? '完成' : '準備'; leftEl.textContent = '';
     $('#btn-breath').textContent = '開始呼吸';
-    if (spent >= 20) Store.addBreath({ date: Store.today(), mode, seconds: spent });
+    if (spent >= 20) Store.addBreath({ date: Store.today(), mode, seconds: spent, at: Date.now() }); Game.check();
     if (done) { UI.beep(660, .2, 2); UI.toast('呼吸完成，去專注吧'); }
     else if (spent < 20) UI.toast('未滿 20 秒，不記錄');
   }
